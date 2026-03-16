@@ -38,7 +38,7 @@ interface FormData {
   extraction_result: any;
 }
 
-const FIELD_TYPES = ["text", "number", "boolean", "date", "select", "textarea"];
+const FIELD_TYPES = ["text", "number", "boolean", "date", "time", "select", "textarea"];
 
 export default function FormReview() {
   const { id } = useParams<{ id: string }>();

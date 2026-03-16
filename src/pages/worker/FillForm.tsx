@@ -53,7 +53,7 @@ export default function FillForm() {
       const today = new Date().toISOString().split("T")[0];
       const defaults: Record<string, any> = {};
       (data.extracted_schema as any)?.fields?.forEach((f: FormField) => {
-        defaults[f.id] = f.type === "boolean" ? false : f.type === "date" ? today : "";
+        defaults[f.id] = f.type === "boolean" ? false : f.type === "date" ? today : f.type === "time" ? new Date().toTimeString().slice(0, 5) : "";
       });
       setValues(defaults);
       setLoading(false);
@@ -129,6 +129,16 @@ export default function FillForm() {
         return (
           <Input
             type="date"
+            value={values[field.id] || ""}
+            onChange={e => updateValue(field.id, e.target.value)}
+            className="text-lg h-14"
+            dir="ltr"
+          />
+        );
+      case "time":
+        return (
+          <Input
+            type="time"
             value={values[field.id] || ""}
             onChange={e => updateValue(field.id, e.target.value)}
             className="text-lg h-14"

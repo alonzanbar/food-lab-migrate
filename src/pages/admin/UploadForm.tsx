@@ -154,7 +154,7 @@ export default function UploadForm() {
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                accept=".pdf,.docx,.jpg,.jpeg,.png"
                 onChange={e => setFile(e.target.files?.[0] || null)}
               />
             </div>

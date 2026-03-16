@@ -142,8 +142,11 @@ serve(async (req) => {
     const isDoc = DOC_TYPES.has(ext);
 
     if (!isVisual && !isDoc) {
+      const hint = ext === "doc" ? " Please save as .docx first." : "";
       return new Response(
-        JSON.stringify({ error: `Unsupported file type: .${ext}. Please upload PDF, DOC, DOCX, JPG, or PNG files.` }),
+        JSON.stringify({ error: `Unsupported file type: .${ext}.${hint} Supported: PDF, DOCX, JPG, PNG.` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

@@ -97,7 +97,7 @@ export default function FormReview() {
     setSaving(true);
     const { error } = await supabase
       .from("forms")
-      .update({ extracted_schema: { fields } })
+      .update({ extracted_schema: { fields } as any })
       .eq("id", form.id);
     if (error) {
       toast.error(error.message);

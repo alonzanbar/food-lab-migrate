@@ -48,10 +48,10 @@ export default function FillForm() {
         navigate("/worker");
         return;
       }
-      setForm(data);
+      setForm(data as any);
       // Initialize default values
       const defaults: Record<string, any> = {};
-      data.extracted_schema?.fields?.forEach((f: FormField) => {
+      (data.extracted_schema as any)?.fields?.forEach((f: FormField) => {
         defaults[f.id] = f.type === "boolean" ? false : "";
       });
       setValues(defaults);

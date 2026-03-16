@@ -55,7 +55,7 @@ export default function ReportResults() {
       if (reportData.date_to) query = query.lte("submitted_at", reportData.date_to + "T23:59:59");
 
       const { data: subs } = await query;
-      setSubmissions(subs || []);
+      setSubmissions((subs as any) || []);
       setLoading(false);
     };
     fetchReport();

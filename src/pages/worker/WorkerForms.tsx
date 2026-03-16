@@ -27,7 +27,7 @@ export default function WorkerForms() {
         .eq("tenant_id", tenantId)
         .eq("status", "active")
         .order("name");
-      setForms(data || []);
+      setForms((data as any) || []);
       setLoading(false);
     };
     fetch();

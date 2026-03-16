@@ -42,7 +42,7 @@ export default function ReportResults() {
         navigate("/admin/reports");
         return;
       }
-      setReport(reportData);
+      setReport(reportData as any);
 
       // Fetch matching submissions
       let query = supabase

@@ -29,7 +29,8 @@ export default function UploadForm() {
     try {
       // 1. Upload file to storage
       setProcessingStatus(t("forms.uploadingFile"));
-      const filePath = `${tenantId}/${Date.now()}_${file.name}`;
+      const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const filePath = `${tenantId}/${safeFileName}`;
       const { error: uploadError } = await supabase.storage
         .from("form-uploads")
         .upload(filePath, file);

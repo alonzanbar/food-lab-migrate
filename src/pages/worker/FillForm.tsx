@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Camera, X, ImageIcon } from "lucide-react";
 
 interface FormField {
   id: string;
@@ -35,6 +35,9 @@ export default function FillForm() {
   const [values, setValues] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -49,7 +52,6 @@ export default function FillForm() {
         return;
       }
       setForm(data as any);
-      // Initialize default values
       const today = new Date().toISOString().split("T")[0];
       const defaults: Record<string, any> = {};
       (data.extracted_schema as any)?.fields?.forEach((f: FormField) => {
@@ -61,10 +63,53 @@ export default function FillForm() {
     fetch();
   }, [id]);
 
+  const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const newImages = [...images, ...files];
+    setImages(newImages);
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setImagePreviews(prev => [...prev, ev.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (submissionId: string): Promise<string[]> => {
+    const urls: string[] = [];
+    for (let i = 0; i < images.length; i++) {
+      const file = images[i];
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${tenantId}/${submissionId}/${i}_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("submission-images")
+        .upload(path, file);
+      if (error) {
+        console.error("Image upload error:", error);
+        continue;
+      }
+      const { data: urlData } = supabase.storage
+        .from("submission-images")
+        .getPublicUrl(path);
+      urls.push(urlData.publicUrl);
+    }
+    return urls;
+  };
+
   const handleSubmit = async () => {
     if (!form || !user || !tenantId) return;
 
-    // Validate required fields
     const fields = form.extracted_schema?.fields || [];
     for (const field of fields) {
       if (field.required && !values[field.id] && values[field.id] !== false && values[field.id] !== 0) {
@@ -74,15 +119,26 @@ export default function FillForm() {
     }
 
     setSubmitting(true);
-    // Build payload with labels as keys for readability
     const payload: Record<string, any> = {};
     fields.forEach(f => {
       payload[f.label] = values[f.id];
     });
 
+    // Generate submission ID upfront so we can use it for image paths
+    const submissionId = crypto.randomUUID();
+
+    // Upload images first
+    if (images.length > 0) {
+      const imageUrls = await uploadImages(submissionId);
+      if (imageUrls.length > 0) {
+        payload["__images"] = imageUrls;
+      }
+    }
+
     const { error } = await supabase
       .from("form_submissions")
       .insert({
+        id: submissionId,
         tenant_id: tenantId,
         form_id: form.id,
         submitted_by: user.id,
@@ -205,6 +261,58 @@ export default function FillForm() {
             {renderField(field)}
           </div>
         ))}
+      </div>
+
+      {/* Image upload section */}
+      <div className="space-y-3 border border-border rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-medium flex items-center gap-2">
+            <ImageIcon className="w-4 h-4" />
+            {t("worker.attachImages")}
+          </Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="gap-1"
+          >
+            <Camera className="w-4 h-4" />
+            {t("worker.addPhoto")}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            capture="environment"
+            onChange={handleImageAdd}
+            className="hidden"
+          />
+        </div>
+
+        {imagePreviews.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {imagePreviews.map((src, i) => (
+              <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {imagePreviews.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            {t("worker.noImagesAttached")}
+          </p>
+        )}
       </div>
 
       {/* Fixed bottom submit button */}

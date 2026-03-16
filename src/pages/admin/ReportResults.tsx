@@ -111,13 +111,28 @@ export default function ReportResults() {
                     </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {Object.entries(sub.payload || {}).map(([key, value]) => (
-                      <div key={key} className="bg-muted/50 rounded p-2">
-                        <span className="text-xs text-muted-foreground block">{key}</span>
-                        <span className="text-sm font-medium">{String(value)}</span>
-                      </div>
-                    ))}
+                    {Object.entries(sub.payload || {})
+                      .filter(([key]) => key !== "__images")
+                      .map(([key, value]) => (
+                        <div key={key} className="bg-muted/50 rounded p-2">
+                          <span className="text-xs text-muted-foreground block">{key}</span>
+                          <span className="text-sm font-medium">{String(value)}</span>
+                        </div>
+                      ))}
                   </div>
+                  {sub.payload?.__images && Array.isArray(sub.payload.__images) && (
+                    <div className="mt-3 flex gap-2 flex-wrap">
+                      {sub.payload.__images.map((url: string, i: number) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={url}
+                            alt={`Photo ${i + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg border border-border hover:opacity-80 transition"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

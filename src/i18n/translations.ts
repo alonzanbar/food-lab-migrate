@@ -109,6 +109,9 @@ export const translations = {
   "worker.backToForms": { he: "חזרה לטפסים", en: "Back to Forms" },
   "worker.fillAnother": { he: "מלא טופס נוסף", en: "Fill Another Form" },
   "worker.noActiveForms": { he: "אין טפסים פעילים", en: "No active forms" },
+  "worker.attachImages": { he: "צרף תמונות", en: "Attach Photos" },
+  "worker.addPhoto": { he: "הוסף תמונה", en: "Add Photo" },
+  "worker.noImagesAttached": { he: "לא צורפו תמונות", en: "No photos attached" },
 
   // Reports
   "reports.title": { he: "דוחות", en: "Reports" },

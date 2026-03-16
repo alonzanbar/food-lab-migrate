@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, Camera, X, ImageIcon } from "lucide-react";
+import { ArrowRight, Camera, X, ImageIcon, Upload } from "lucide-react";
 
 interface FormField {
   id: string;

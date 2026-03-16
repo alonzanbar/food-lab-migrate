@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchUserMeta(session.user.id), 0);
+          await fetchUserMeta(session.user.id);
         } else {
           setRole(null);
           setTenantId(null);
@@ -60,11 +60,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserMeta(session.user.id);
+        await fetchUserMeta(session.user.id);
       }
       setLoading(false);
     });

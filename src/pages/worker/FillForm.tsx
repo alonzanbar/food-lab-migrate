@@ -135,6 +135,16 @@ export default function FillForm() {
             dir="ltr"
           />
         );
+      case "time":
+        return (
+          <Input
+            type="time"
+            value={values[field.id] || ""}
+            onChange={e => updateValue(field.id, e.target.value)}
+            className="text-lg h-14"
+            dir="ltr"
+          />
+        );
       case "textarea":
         return (
           <Textarea

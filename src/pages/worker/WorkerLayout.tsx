@@ -24,6 +24,15 @@ export default function WorkerLayout() {
           <h1 className="text-lg font-bold font-display">{t("app.name")}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {role === "admin" && (
+            <button
+              onClick={() => navigate("/admin/forms")}
+              className="p-2 text-accent hover:text-foreground"
+              title={t("nav.admin")}
+            >
+              <Shield className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={() => setLang(lang === "he" ? "en" : "he")}
             className="p-2 text-muted-foreground hover:text-foreground"

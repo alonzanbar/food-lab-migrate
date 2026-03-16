@@ -67,7 +67,12 @@ export default function UploadForm() {
         }
       );
 
-      if (fnError) throw new Error(fnError.message || "AI extraction failed");
+      if (fnError) {
+        const errorMsg = typeof fnError === 'object' && fnError.context?.body
+          ? JSON.parse(fnError.context.body)?.error
+          : fnError.message;
+        throw new Error(errorMsg || "AI extraction failed");
+      }
       if (extractionData?.error) throw new Error(extractionData.error);
 
       // 4. Update form with extracted schema

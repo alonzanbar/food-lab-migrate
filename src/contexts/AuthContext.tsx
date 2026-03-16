@@ -46,20 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchUserMeta(session.user.id);
-        } else {
-          setRole(null);
-          setTenantId(null);
-        }
-        setLoading(false);
-      }
-    );
-
+    // Get initial session first
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -68,6 +55,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
     });
+
+    // Listen for auth changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          // Use setTimeout to avoid Supabase deadlock when querying inside callback
+          setTimeout(() => fetchUserMeta(session.user.id), 0);
+        } else {
+          setRole(null);
+          setTenantId(null);
+        }
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);

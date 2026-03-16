@@ -61,8 +61,8 @@ export default function FormReview() {
         navigate("/admin/forms");
         return;
       }
-      setForm(data);
-      setFields(data.extracted_schema?.fields || []);
+      setForm(data as any);
+      setFields((data.extracted_schema as any)?.fields || []);
       setLoading(false);
     };
     fetch();

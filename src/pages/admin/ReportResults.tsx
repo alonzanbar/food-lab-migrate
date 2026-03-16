@@ -47,7 +47,7 @@ export default function ReportResults() {
       // Fetch matching submissions
       let query = supabase
         .from("form_submissions")
-        .select("*, profiles:submitted_by(full_name)")
+        .select("*")
         .order("submitted_at", { ascending: false });
 
       if (reportData.form_id) query = query.eq("form_id", reportData.form_id);
@@ -55,7 +55,22 @@ export default function ReportResults() {
       if (reportData.date_to) query = query.lte("submitted_at", reportData.date_to + "T23:59:59");
 
       const { data: subs } = await query;
-      setSubmissions((subs as any) || []);
+      const submissions = (subs as any) || [];
+
+      // Fetch profile names for submitters
+      const userIds = [...new Set(submissions.map((s: any) => s.submitted_by).filter(Boolean))];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.full_name]));
+        submissions.forEach((s: any) => {
+          s.profiles = { full_name: profileMap[s.submitted_by] || null };
+        });
+      }
+
+      setSubmissions(submissions);
       setLoading(false);
     };
     fetchReport();

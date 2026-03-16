@@ -58,12 +58,12 @@ export default function ReportResults() {
       const submissions = (subs as any) || [];
 
       // Fetch profile names for submitters
-      const userIds = [...new Set(submissions.map((s: any) => s.submitted_by as string).filter(Boolean))];
+      const userIds: string[] = [...new Set(submissions.map((s: any) => s.submitted_by as string).filter(Boolean))];
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, full_name")
-          .in("id", userIds);
+          .in("id", userIds as string[]);
         const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.full_name]));
         submissions.forEach((s: any) => {
           s.profiles = { full_name: profileMap[s.submitted_by] || null };

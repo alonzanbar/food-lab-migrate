@@ -50,9 +50,10 @@ export default function FillForm() {
       }
       setForm(data as any);
       // Initialize default values
+      const today = new Date().toISOString().split("T")[0];
       const defaults: Record<string, any> = {};
       (data.extracted_schema as any)?.fields?.forEach((f: FormField) => {
-        defaults[f.id] = f.type === "boolean" ? false : "";
+        defaults[f.id] = f.type === "boolean" ? false : f.type === "date" ? today : "";
       });
       setValues(defaults);
       setLoading(false);

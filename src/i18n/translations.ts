@@ -95,6 +95,7 @@ export const translations = {
   "fieldType.number": { he: "מספר", en: "Number" },
   "fieldType.boolean": { he: "כן/לא", en: "Yes/No" },
   "fieldType.date": { he: "תאריך", en: "Date" },
+  "fieldType.time": { he: "שעה", en: "Time" },
   "fieldType.select": { he: "בחירה", en: "Select" },
   "fieldType.textarea": { he: "טקסט ארוך", en: "Long Text" },
 

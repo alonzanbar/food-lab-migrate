@@ -6,86 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Upload, Sparkles, FileText } from "lucide-react";
 import { toast } from "sonner";
-
-// Mock AI extraction - generates sample schema based on real factory form patterns
-function mockExtractSchema(fileName: string) {
-  const sampleFields = [
-    {
-      id: "field_1",
-      label: "תאריך",
-      type: "date",
-      required: true,
-      semantic: { concept: "inspection_date", value_type: "date", unit: null, process_step: "cooling_control", confidence: 0.97 },
-    },
-    {
-      id: "field_2",
-      label: "שם העובד",
-      type: "text",
-      required: true,
-      semantic: { concept: "worker_name", value_type: "text", unit: null, process_step: null, confidence: 0.95 },
-    },
-    {
-      id: "field_3",
-      label: "טמפ׳ במרכז המוצר בכניסה לצ׳ילר",
-      type: "number",
-      required: true,
-      semantic: { concept: "product_core_temp_entry", value_type: "number", unit: "celsius", process_step: "chiller_entry", confidence: 0.91 },
-    },
-    {
-      id: "field_4",
-      label: "שעת כניסה לצ׳ילר",
-      type: "text",
-      required: true,
-      semantic: { concept: "chiller_entry_time", value_type: "time", unit: "HH:mm", process_step: "chiller_entry", confidence: 0.93 },
-    },
-    {
-      id: "field_5",
-      label: "טמפ׳ יציאה מהצ׳ילר",
-      type: "number",
-      required: true,
-      semantic: { concept: "product_temp_exit", value_type: "number", unit: "celsius", process_step: "chiller_exit", confidence: 0.90 },
-    },
-    {
-      id: "field_6",
-      label: "שעת יציאה מהצ׳ילר",
-      type: "text",
-      required: true,
-      semantic: { concept: "chiller_exit_time", value_type: "time", unit: "HH:mm", process_step: "chiller_exit", confidence: 0.92 },
-    },
-    {
-      id: "field_7",
-      label: "טמפ׳ במרכז המוצר (עד שעתיים מהכניסה)",
-      type: "number",
-      required: true,
-      semantic: { concept: "product_core_temp_2h", value_type: "number", unit: "celsius", process_step: "cooling_verification", confidence: 0.87 },
-    },
-    {
-      id: "field_8",
-      label: "פעולות מתקנות",
-      type: "textarea",
-      required: false,
-      semantic: { concept: "corrective_actions", value_type: "text", unit: null, process_step: "deviation_handling", confidence: 0.89 },
-    },
-    {
-      id: "field_9",
-      label: "הערות",
-      type: "textarea",
-      required: false,
-      semantic: { concept: "notes", value_type: "text", unit: null, process_step: null, confidence: 0.94 },
-    },
-    {
-      id: "field_10",
-      label: "חתימה",
-      type: "text",
-      required: true,
-      semantic: { concept: "worker_signature", value_type: "text", unit: null, process_step: "approval", confidence: 0.86 },
-    },
-  ];
-  return { fields: sampleFields, source_form: { title: "בקרת צינון מוצר", form_number: "1015", type: "CCP2", last_updated: "03.04.2019" } };
-}
 
 export default function UploadForm() {
   const { tenantId, user } = useAuth();
@@ -96,6 +19,7 @@ export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState("");
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +27,8 @@ export default function UploadForm() {
 
     setUploading(true);
     try {
-      // Upload file to storage
+      // 1. Upload file to storage
+      setProcessingStatus(t("forms.uploadingFile"));
       const filePath = `${tenantId}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("form-uploads")
@@ -114,7 +39,7 @@ export default function UploadForm() {
         .from("form-uploads")
         .getPublicUrl(filePath);
 
-      // Create form record with processing status
+      // 2. Create form record with processing status
       const { data: form, error: insertError } = await supabase
         .from("forms")
         .insert({
@@ -132,16 +57,31 @@ export default function UploadForm() {
       setUploading(false);
       setProcessing(true);
 
-      // Simulate AI processing delay
-      await new Promise(r => setTimeout(r, 2500));
+      // 3. Call AI extraction edge function
+      setProcessingStatus(t("forms.extractingFields"));
+      const { data: extractionData, error: fnError } = await supabase.functions.invoke(
+        "extract-form-schema",
+        {
+          body: { file_path: filePath, file_name: file.name },
+        }
+      );
 
-      // Mock extraction result
-      const schema = mockExtractSchema(file.name);
+      if (fnError) throw new Error(fnError.message || "AI extraction failed");
+      if (extractionData?.error) throw new Error(extractionData.error);
+
+      // 4. Update form with extracted schema
+      setProcessingStatus(t("forms.savingResults"));
+      const schema = { fields: extractionData.fields || [] };
       const { error: updateError } = await supabase
         .from("forms")
         .update({
-          extracted_schema: schema,
-          extraction_result: { raw: schema, processed_at: new Date().toISOString(), source: "ai_mock" },
+          extracted_schema: schema as any,
+          extraction_result: {
+            raw: extractionData,
+            metadata: extractionData.metadata,
+            processed_at: new Date().toISOString(),
+            source: "lovable_ai",
+          } as any,
           status: "draft",
         })
         .eq("id", form.id);
@@ -150,10 +90,12 @@ export default function UploadForm() {
       toast.success(t("forms.uploadSuccess"));
       navigate(`/admin/forms/${form.id}`);
     } catch (err: any) {
-      toast.error(err.message);
+      console.error("Upload error:", err);
+      toast.error(err.message || t("common.error"));
     } finally {
       setUploading(false);
       setProcessing(false);
+      setProcessingStatus("");
     }
   };
 
@@ -184,10 +126,23 @@ export default function UploadForm() {
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-accent transition-colors"
               >
-                <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">
-                  {file ? file.name : t("forms.dragToUpload")}
-                </p>
+                {file ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <FileText className="w-8 h-8 text-accent" />
+                    <div className="text-start">
+                      <p className="font-medium">{file.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(file.size / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">{t("forms.dragToUpload")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</p>
+                  </>
+                )}
               </div>
               <input
                 ref={fileInputRef}
@@ -198,16 +153,22 @@ export default function UploadForm() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={uploading || processing || !file || !formName}>
+            <Button type="submit" className="w-full h-12 text-base" disabled={uploading || processing || !file || !formName}>
               {processing ? (
                 <span className="flex items-center gap-2">
-                  <span className="animate-pulse-slow">●</span>
-                  {t("forms.processing")}
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                  {processingStatus || t("forms.processing")}
                 </span>
               ) : uploading ? (
-                t("forms.uploading")
+                <span className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 animate-pulse" />
+                  {t("forms.uploading")}
+                </span>
               ) : (
-                t("forms.upload")
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  {t("forms.uploadAndExtract")}
+                </span>
               )}
             </Button>
           </form>

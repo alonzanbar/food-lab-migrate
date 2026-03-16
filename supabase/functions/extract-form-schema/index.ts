@@ -164,7 +164,7 @@ serve(async (req) => {
     if (isDoc) {
       // Extract HTML from DOC/DOCX using mammoth
       console.log(`Converting ${ext} to HTML using mammoth...`);
-      const result = await mammoth.convertToHtml({ buffer: Buffer.from(arrayBuffer) });
+      const result = await mammoth.convertToHtml({ buffer: new Uint8Array(arrayBuffer) });
       if (result.messages?.length) {
         console.log("Mammoth warnings:", result.messages);
       }

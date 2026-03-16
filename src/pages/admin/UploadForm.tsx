@@ -10,53 +10,81 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
-// Mock AI extraction - generates sample schema from filename
+// Mock AI extraction - generates sample schema based on real factory form patterns
 function mockExtractSchema(fileName: string) {
   const sampleFields = [
     {
       id: "field_1",
-      label: "טמפרטורה",
-      type: "number",
+      label: "תאריך",
+      type: "date",
       required: true,
-      semantic: { concept: "temperature", value_type: "number", unit: "celsius", process_step: "cooling", confidence: 0.92 },
+      semantic: { concept: "inspection_date", value_type: "date", unit: null, process_step: "cooling_control", confidence: 0.97 },
     },
     {
       id: "field_2",
-      label: "תאריך בדיקה",
-      type: "date",
-      required: true,
-      semantic: { concept: "inspection_date", value_type: "date", unit: null, process_step: "quality_check", confidence: 0.98 },
-    },
-    {
-      id: "field_3",
       label: "שם העובד",
       type: "text",
       required: true,
       semantic: { concept: "worker_name", value_type: "text", unit: null, process_step: null, confidence: 0.95 },
     },
     {
-      id: "field_4",
-      label: "תקין",
-      type: "boolean",
+      id: "field_3",
+      label: "טמפ׳ במרכז המוצר בכניסה לצ׳ילר",
+      type: "number",
       required: true,
-      semantic: { concept: "pass_fail", value_type: "boolean", unit: null, process_step: "quality_check", confidence: 0.88 },
+      semantic: { concept: "product_core_temp_entry", value_type: "number", unit: "celsius", process_step: "chiller_entry", confidence: 0.91 },
+    },
+    {
+      id: "field_4",
+      label: "שעת כניסה לצ׳ילר",
+      type: "text",
+      required: true,
+      semantic: { concept: "chiller_entry_time", value_type: "time", unit: "HH:mm", process_step: "chiller_entry", confidence: 0.93 },
     },
     {
       id: "field_5",
-      label: "הערות",
-      type: "textarea",
-      required: false,
-      semantic: { concept: "notes", value_type: "text", unit: null, process_step: null, confidence: 0.90 },
+      label: "טמפ׳ יציאה מהצ׳ילר",
+      type: "number",
+      required: true,
+      semantic: { concept: "product_temp_exit", value_type: "number", unit: "celsius", process_step: "chiller_exit", confidence: 0.90 },
     },
     {
       id: "field_6",
-      label: "לחות",
+      label: "שעת יציאה מהצ׳ילר",
+      type: "text",
+      required: true,
+      semantic: { concept: "chiller_exit_time", value_type: "time", unit: "HH:mm", process_step: "chiller_exit", confidence: 0.92 },
+    },
+    {
+      id: "field_7",
+      label: "טמפ׳ במרכז המוצר (עד שעתיים מהכניסה)",
       type: "number",
+      required: true,
+      semantic: { concept: "product_core_temp_2h", value_type: "number", unit: "celsius", process_step: "cooling_verification", confidence: 0.87 },
+    },
+    {
+      id: "field_8",
+      label: "פעולות מתקנות",
+      type: "textarea",
       required: false,
-      semantic: { concept: "humidity", value_type: "number", unit: "percent", process_step: "storage", confidence: 0.85 },
+      semantic: { concept: "corrective_actions", value_type: "text", unit: null, process_step: "deviation_handling", confidence: 0.89 },
+    },
+    {
+      id: "field_9",
+      label: "הערות",
+      type: "textarea",
+      required: false,
+      semantic: { concept: "notes", value_type: "text", unit: null, process_step: null, confidence: 0.94 },
+    },
+    {
+      id: "field_10",
+      label: "חתימה",
+      type: "text",
+      required: true,
+      semantic: { concept: "worker_signature", value_type: "text", unit: null, process_step: "approval", confidence: 0.86 },
     },
   ];
-  return { fields: sampleFields };
+  return { fields: sampleFields, source_form: { title: "בקרת צינון מוצר", form_number: "1015", type: "CCP2", last_updated: "03.04.2019" } };
 }
 
 export default function UploadForm() {

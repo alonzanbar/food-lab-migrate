@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,8 +61,8 @@ export default function FormReview() {
         navigate("/admin/forms");
         return;
       }
-      setForm(data);
-      setFields(data.extracted_schema?.fields || []);
+      setForm(data as any);
+      setFields((data.extracted_schema as any)?.fields || []);
       setLoading(false);
     };
     fetch();
@@ -97,7 +97,7 @@ export default function FormReview() {
     setSaving(true);
     const { error } = await supabase
       .from("forms")
-      .update({ extracted_schema: { fields } })
+      .update({ extracted_schema: { fields } as any })
       .eq("id", form.id);
     if (error) {
       toast.error(error.message);

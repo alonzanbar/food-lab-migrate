@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { FileText, ChevronLeft } from "lucide-react";
 
 interface Form {
@@ -27,7 +27,7 @@ export default function WorkerForms() {
         .eq("tenant_id", tenantId)
         .eq("status", "active")
         .order("name");
-      setForms(data || []);
+      setForms((data as any) || []);
       setLoading(false);
     };
     fetch();

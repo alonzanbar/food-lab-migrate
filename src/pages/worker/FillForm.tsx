@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,10 +48,10 @@ export default function FillForm() {
         navigate("/worker");
         return;
       }
-      setForm(data);
+      setForm(data as any);
       // Initialize default values
       const defaults: Record<string, any> = {};
-      data.extracted_schema?.fields?.forEach((f: FormField) => {
+      (data.extracted_schema as any)?.fields?.forEach((f: FormField) => {
         defaults[f.id] = f.type === "boolean" ? false : "";
       });
       setValues(defaults);

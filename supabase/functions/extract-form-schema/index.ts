@@ -15,7 +15,7 @@ const VISUAL_TYPES: Record<string, string> = {
   jpeg: "image/jpeg",
 };
 
-const DOC_TYPES = new Set(["doc", "docx"]);
+const DOC_TYPES = new Set(["docx"]);
 
 const systemPrompt = `You are a form extraction AI for food factory quality control forms.
 You analyze uploaded factory documents (forms, checklists, tables) and extract all fillable fields.

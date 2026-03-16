@@ -1,0 +1,129 @@
+export type Language = "he" | "en";
+
+export const translations = {
+  // Common
+  "app.name": { he: "FactoryFlow", en: "FactoryFlow" },
+  "common.loading": { he: "טוען...", en: "Loading..." },
+  "common.save": { he: "שמור", en: "Save" },
+  "common.cancel": { he: "ביטול", en: "Cancel" },
+  "common.delete": { he: "מחק", en: "Delete" },
+  "common.edit": { he: "עריכה", en: "Edit" },
+  "common.back": { he: "חזרה", en: "Back" },
+  "common.submit": { he: "שלח", en: "Submit" },
+  "common.search": { he: "חיפוש", en: "Search" },
+  "common.actions": { he: "פעולות", en: "Actions" },
+  "common.status": { he: "סטטוס", en: "Status" },
+  "common.name": { he: "שם", en: "Name" },
+  "common.date": { he: "תאריך", en: "Date" },
+  "common.yes": { he: "כן", en: "Yes" },
+  "common.no": { he: "לא", en: "No" },
+  "common.close": { he: "סגור", en: "Close" },
+  "common.confirm": { he: "אישור", en: "Confirm" },
+  "common.required": { he: "שדה חובה", en: "Required" },
+  "common.optional": { he: "אופציונלי", en: "Optional" },
+  "common.noData": { he: "אין נתונים", en: "No data" },
+  "common.logout": { he: "התנתק", en: "Logout" },
+  "common.language": { he: "שפה", en: "Language" },
+
+  // Auth
+  "auth.login": { he: "התחברות", en: "Login" },
+  "auth.email": { he: "דוא״ל", en: "Email" },
+  "auth.password": { he: "סיסמה", en: "Password" },
+  "auth.loginButton": { he: "התחבר", en: "Sign In" },
+  "auth.signupButton": { he: "הרשמה", en: "Sign Up" },
+  "auth.noAccount": { he: "אין לך חשבון?", en: "Don't have an account?" },
+  "auth.hasAccount": { he: "יש לך חשבון?", en: "Already have an account?" },
+  "auth.fullName": { he: "שם מלא", en: "Full Name" },
+  "auth.signingIn": { he: "מתחבר...", en: "Signing in..." },
+  "auth.signingUp": { he: "נרשם...", en: "Signing up..." },
+  "auth.welcomeTitle": { he: "ברוכים הבאים ל-FactoryFlow", en: "Welcome to FactoryFlow" },
+  "auth.welcomeSubtitle": { he: "ניהול טפסים דיגיטליים למפעלי מזון", en: "Digital form management for food factories" },
+  "auth.signupSuccess": { he: "ההרשמה הצליחה! התחבר כעת.", en: "Signed up! Please log in." },
+  "auth.loginError": { he: "שגיאה בהתחברות", en: "Login error" },
+
+  // Navigation
+  "nav.forms": { he: "טפסים", en: "Forms" },
+  "nav.reports": { he: "דוחות", en: "Reports" },
+  "nav.admin": { he: "ניהול", en: "Admin" },
+  "nav.worker": { he: "עובד", en: "Worker" },
+
+  // Forms
+  "forms.title": { he: "טפסים", en: "Forms" },
+  "forms.upload": { he: "העלאת טופס חדש", en: "Upload New Form" },
+  "forms.noForms": { he: "אין טפסים עדיין", en: "No forms yet" },
+  "forms.uploadFirst": { he: "העלה את הטופס הראשון שלך", en: "Upload your first form" },
+  "forms.name": { he: "שם הטופס", en: "Form Name" },
+  "forms.file": { he: "קובץ", en: "File" },
+  "forms.uploadFile": { he: "בחר קובץ להעלאה", en: "Choose file to upload" },
+  "forms.uploading": { he: "מעלה...", en: "Uploading..." },
+  "forms.processing": { he: "מעבד...", en: "Processing..." },
+  "forms.activate": { he: "הפעל", en: "Activate" },
+  "forms.deactivate": { he: "השבת", en: "Deactivate" },
+  "forms.review": { he: "סקירה", en: "Review" },
+  "forms.active": { he: "פעיל", en: "Active" },
+  "forms.inactive": { he: "לא פעיל", en: "Inactive" },
+  "forms.draft": { he: "טיוטה", en: "Draft" },
+  "forms.processingStatus": { he: "בעיבוד", en: "Processing" },
+  "forms.createdAt": { he: "נוצר בתאריך", en: "Created at" },
+  "forms.fields": { he: "שדות", en: "Fields" },
+  "forms.extractedFields": { he: "שדות שחולצו", en: "Extracted Fields" },
+  "forms.fieldLabel": { he: "תווית שדה", en: "Field Label" },
+  "forms.fieldType": { he: "סוג שדה", en: "Field Type" },
+  "forms.fieldRequired": { he: "חובה", en: "Required" },
+  "forms.semantic": { he: "מידע סמנטי", en: "Semantic Info" },
+  "forms.concept": { he: "קונספט", en: "Concept" },
+  "forms.unit": { he: "יחידה", en: "Unit" },
+  "forms.confidence": { he: "ודאות", en: "Confidence" },
+  "forms.processStep": { he: "שלב בתהליך", en: "Process Step" },
+  "forms.saveSchema": { he: "שמור שינויים", en: "Save Changes" },
+  "forms.sourceFile": { he: "קובץ מקור", en: "Source File" },
+  "forms.uploadSuccess": { he: "הטופס הועלה בהצלחה", en: "Form uploaded successfully" },
+  "forms.activateSuccess": { he: "הטופס הופעל", en: "Form activated" },
+  "forms.deactivateSuccess": { he: "הטופס הושבת", en: "Form deactivated" },
+  "forms.schemaSaved": { he: "השינויים נשמרו", en: "Changes saved" },
+  "forms.addField": { he: "הוסף שדה", en: "Add Field" },
+  "forms.removeField": { he: "הסר שדה", en: "Remove Field" },
+  "forms.dragToUpload": { he: "גרור קובץ לכאן או לחץ לבחירה", en: "Drag file here or click to select" },
+
+  // Field types
+  "fieldType.text": { he: "טקסט", en: "Text" },
+  "fieldType.number": { he: "מספר", en: "Number" },
+  "fieldType.boolean": { he: "כן/לא", en: "Yes/No" },
+  "fieldType.date": { he: "תאריך", en: "Date" },
+  "fieldType.select": { he: "בחירה", en: "Select" },
+  "fieldType.textarea": { he: "טקסט ארוך", en: "Long Text" },
+
+  // Worker
+  "worker.title": { he: "הטפסים שלי", en: "My Forms" },
+  "worker.fillForm": { he: "מלא טופס", en: "Fill Form" },
+  "worker.submitForm": { he: "שלח טופס", en: "Submit Form" },
+  "worker.submitting": { he: "שולח...", en: "Submitting..." },
+  "worker.submissionSuccess": { he: "הטופס נשלח בהצלחה!", en: "Form submitted successfully!" },
+  "worker.submissionSuccessDesc": { he: "התשובות שלך נשמרו במערכת", en: "Your answers have been saved" },
+  "worker.backToForms": { he: "חזרה לטפסים", en: "Back to Forms" },
+  "worker.fillAnother": { he: "מלא טופס נוסף", en: "Fill Another Form" },
+  "worker.noActiveForms": { he: "אין טפסים פעילים", en: "No active forms" },
+
+  // Reports
+  "reports.title": { he: "דוחות", en: "Reports" },
+  "reports.create": { he: "צור דוח חדש", en: "Create New Report" },
+  "reports.noReports": { he: "אין דוחות עדיין", en: "No reports yet" },
+  "reports.formName": { he: "שם טופס", en: "Form Name" },
+  "reports.dateFrom": { he: "מתאריך", en: "From Date" },
+  "reports.dateTo": { he: "עד תאריך", en: "To Date" },
+  "reports.reportName": { he: "שם הדוח", en: "Report Name" },
+  "reports.createSuccess": { he: "הדוח נוצר בהצלחה", en: "Report created successfully" },
+  "reports.submissions": { he: "הגשות", en: "Submissions" },
+  "reports.submittedBy": { he: "הוגש ע״י", en: "Submitted By" },
+  "reports.submittedAt": { he: "הוגש בתאריך", en: "Submitted At" },
+  "reports.viewResults": { he: "צפה בתוצאות", en: "View Results" },
+  "reports.noSubmissions": { he: "אין הגשות בטווח זה", en: "No submissions in this range" },
+} as const;
+
+export type TranslationKey = keyof typeof translations;
+
+export function t(key: TranslationKey, lang: Language): string {
+  const entry = translations[key];
+  if (!entry) return key;
+  return entry[lang] || entry["en"] || key;
+}

@@ -3,10 +3,10 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Globe, FileText } from "lucide-react";
+import { LogOut, Globe, FileText, Shield } from "lucide-react";
 
 export default function WorkerLayout() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, role } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const navigate = useNavigate();
 
@@ -24,6 +24,15 @@ export default function WorkerLayout() {
           <h1 className="text-lg font-bold font-display">{t("app.name")}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {role === "admin" && (
+            <button
+              onClick={() => navigate("/admin/forms")}
+              className="p-2 text-accent hover:text-foreground"
+              title={t("nav.admin")}
+            >
+              <Shield className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={() => setLang(lang === "he" ? "en" : "he")}
             className="p-2 text-muted-foreground hover:text-foreground"

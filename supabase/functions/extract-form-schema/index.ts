@@ -23,7 +23,8 @@ You analyze uploaded factory documents (forms, checklists, tables) and extract a
 For each field, provide:
 - id: a unique snake_case identifier
 - label: the Hebrew label as shown in the form
-- type: one of "text", "number", "boolean", "date", "textarea", "select"
+- type: one of "text", "number", "boolean", "date", "time", "textarea", "select"
+Important: If a field label contains words like "שעה", "שעת", "hour", "time", or similar time-related terms, set its type to "time".
 - required: whether the field appears mandatory
 - options: for select fields, list the options if visible
 - semantic: object with:

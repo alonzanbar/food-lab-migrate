@@ -133,7 +133,6 @@ export default function ReportResults() {
                       ))}
                     </div>
                   )}
-                  </div>
                 </div>
               ))}
             </div>

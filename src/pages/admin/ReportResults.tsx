@@ -58,7 +58,7 @@ export default function ReportResults() {
       const submissions = (subs as any) || [];
 
       // Fetch profile names for submitters
-      const userIds: string[] = [...new Set(submissions.map((s: any) => s.submitted_by as string).filter(Boolean))];
+      const userIds: string[] = submissions.map((s: any) => s.submitted_by).filter((x: any): x is string => typeof x === "string");
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")

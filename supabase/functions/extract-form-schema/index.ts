@@ -66,7 +66,7 @@ const extractionTools = [
               properties: {
                 id: { type: "string" },
                 label: { type: "string" },
-                type: { type: "string", enum: ["text", "number", "boolean", "date", "textarea", "select"] },
+                type: { type: "string", enum: ["text", "number", "boolean", "date", "time", "textarea", "select"] },
                 required: { type: "boolean" },
                 options: { type: "array", items: { type: "string" } },
                 semantic: {

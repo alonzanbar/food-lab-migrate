@@ -15,7 +15,7 @@ const VISUAL_TYPES: Record<string, string> = {
   jpeg: "image/jpeg",
 };
 
-const DOC_TYPES = new Set(["doc", "docx"]);
+const DOC_TYPES = new Set(["docx"]);
 
 const systemPrompt = `You are a form extraction AI for food factory quality control forms.
 You analyze uploaded factory documents (forms, checklists, tables) and extract all fillable fields.
@@ -142,8 +142,9 @@ serve(async (req) => {
     const isDoc = DOC_TYPES.has(ext);
 
     if (!isVisual && !isDoc) {
+      const hint = ext === "doc" ? " Please save as .docx first." : "";
       return new Response(
-        JSON.stringify({ error: `Unsupported file type: .${ext}. Please upload PDF, DOC, DOCX, JPG, or PNG files.` }),
+        JSON.stringify({ error: `Unsupported file type: .${ext}.${hint} Supported: PDF, DOCX, JPG, PNG.` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

@@ -44,17 +44,19 @@ serve(async (req) => {
 
     // Determine MIME type
     const ext = (file_name || file_path).split(".").pop()?.toLowerCase() || "";
-    const mimeMap: Record<string, string> = {
+    const supportedMimes: Record<string, string> = {
       pdf: "application/pdf",
       png: "image/png",
       jpg: "image/jpeg",
       jpeg: "image/jpeg",
-      doc: "application/msword",
-      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      xls: "application/vnd.ms-excel",
-      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     };
-    const mimeType = mimeMap[ext] || "application/octet-stream";
+    const mimeType = supportedMimes[ext];
+    if (!mimeType) {
+      return new Response(
+        JSON.stringify({ error: `Unsupported file type: .${ext}. Please upload PDF, JPG, or PNG files.` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const systemPrompt = `You are a form extraction AI for food factory quality control forms.
 You analyze uploaded factory documents (forms, checklists, tables) and extract all fillable fields.

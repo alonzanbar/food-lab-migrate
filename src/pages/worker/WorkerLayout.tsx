@@ -3,10 +3,10 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Globe, FileText } from "lucide-react";
+import { LogOut, Globe, FileText, Shield } from "lucide-react";
 
 export default function WorkerLayout() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, role } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const navigate = useNavigate();
 

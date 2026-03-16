@@ -67,7 +67,12 @@ export default function UploadForm() {
         }
       );
 
-      if (fnError) throw new Error(fnError.message || "AI extraction failed");
+      if (fnError) {
+        const errorMsg = typeof fnError === 'object' && fnError.context?.body
+          ? JSON.parse(fnError.context.body)?.error
+          : fnError.message;
+        throw new Error(errorMsg || "AI extraction failed");
+      }
       if (extractionData?.error) throw new Error(extractionData.error);
 
       // 4. Update form with extracted schema
@@ -141,7 +146,7 @@ export default function UploadForm() {
                   <>
                     <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <p className="text-muted-foreground">{t("forms.dragToUpload")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG</p>
                   </>
                 )}
               </div>
@@ -149,7 +154,7 @@ export default function UploadForm() {
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png"
+                accept=".pdf,.jpg,.jpeg,.png"
                 onChange={e => setFile(e.target.files?.[0] || null)}
               />
             </div>

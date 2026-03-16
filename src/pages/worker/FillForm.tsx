@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, Camera, X, ImageIcon } from "lucide-react";
+import { ArrowRight, Camera, X, ImageIcon, Upload } from "lucide-react";
 
 interface FormField {
   id: string;
@@ -38,6 +38,7 @@ export default function FillForm() {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -270,22 +271,41 @@ export default function FillForm() {
             <ImageIcon className="w-4 h-4" />
             {t("worker.attachImages")}
           </Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="gap-1"
-          >
-            <Camera className="w-4 h-4" />
-            {t("worker.addPhoto")}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => cameraInputRef.current?.click()}
+              className="gap-1"
+            >
+              <Camera className="w-4 h-4" />
+              {t("worker.takePhoto")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-1"
+            >
+              <Upload className="w-4 h-4" />
+              {t("worker.addPhoto")}
+            </Button>
+          </div>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageAdd}
+            className="hidden"
+          />
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
             multiple
-            capture="environment"
             onChange={handleImageAdd}
             className="hidden"
           />

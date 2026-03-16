@@ -271,22 +271,41 @@ export default function FillForm() {
             <ImageIcon className="w-4 h-4" />
             {t("worker.attachImages")}
           </Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="gap-1"
-          >
-            <Camera className="w-4 h-4" />
-            {t("worker.addPhoto")}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => cameraInputRef.current?.click()}
+              className="gap-1"
+            >
+              <Camera className="w-4 h-4" />
+              {t("worker.takePhoto")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-1"
+            >
+              <Upload className="w-4 h-4" />
+              {t("worker.addPhoto")}
+            </Button>
+          </div>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageAdd}
+            className="hidden"
+          />
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
             multiple
-            capture="environment"
             onChange={handleImageAdd}
             className="hidden"
           />

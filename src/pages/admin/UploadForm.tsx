@@ -60,6 +60,38 @@ export default function UploadForm() {
 
       // 3. Call AI extraction edge function
       setProcessingStatus(t("forms.extractingFields"));
+
+      // Ensure the edge function invocation includes the current user's JWT.
+      // Without this, Supabase Functions may respond with 401 even if the user is logged in.
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      // #region agent log: edge function auth injection (no secrets)
+      try {
+        fetch("http://127.0.0.1:7272/ingest/45a33b7d-9778-4253-ab68-f6f218c5630d", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "dfe2f2",
+          },
+          body: JSON.stringify({
+            sessionId: "dfe2f2",
+            hypothesisId: "B",
+            location: "UploadForm.tsx:before_functions_invoke",
+            message: "Setting Supabase Functions auth from current session",
+            data: { hasAccessToken: !!accessToken, hasSession: !!session },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      } catch (_e) {
+        // ignore logging failures
+      }
+      // #endregion
+
+      if (accessToken) {
+        supabase.functions.setAuth(accessToken);
+      }
+
       const { data: extractionData, error: fnError } = await supabase.functions.invoke(
         "extract-form-schema",
         {

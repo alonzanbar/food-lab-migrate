@@ -67,6 +67,14 @@ export default function UploadForm() {
       let session = initialSession;
       let accessToken = session?.access_token;
 
+      const normalizeAccessToken = (token: string) => {
+        // Access tokens should be JWTs (3 dot-separated base64url parts).
+        // In case the token was stored with quotes/whitespace, normalize it.
+        const trimmed = token.trim();
+        const unquoted = trimmed.replace(/^"(.*)"$/, "$1");
+        return unquoted;
+      };
+
       // Refresh the session immediately before invoking the Edge Function.
       // This helps when the stored access token is stale/expired or minted for a previous project.
       if (session) {
@@ -78,6 +86,8 @@ export default function UploadForm() {
           accessToken = session?.access_token;
         }
       }
+
+      const normalizedAccessToken = accessToken ? normalizeAccessToken(accessToken) : undefined;
 
       const decodeJwtPayload = (token: string) => {
         try {
@@ -92,12 +102,23 @@ export default function UploadForm() {
         }
       };
 
-      const jwtMeta = accessToken ? decodeJwtPayload(accessToken) : null;
+      const jwtMeta = normalizedAccessToken ? decodeJwtPayload(normalizedAccessToken) : null;
+
+      const tokenMeta = normalizedAccessToken
+        ? {
+            tokenLen: normalizedAccessToken.length,
+            dotParts: normalizedAccessToken.split(".").length,
+            hasWhitespace: /\s/.test(normalizedAccessToken),
+            hasQuotes: /^".*"$/.test(normalizedAccessToken),
+          }
+        : { tokenLen: 0, dotParts: 0, hasWhitespace: false, hasQuotes: false };
+
       console.log("[UploadForm] Edge function auth metadata", {
-        hasAccessToken: !!accessToken,
+        hasAccessToken: !!normalizedAccessToken,
         hasSession: !!session,
         jwtIss: jwtMeta?.iss ?? null,
         jwtExp: jwtMeta?.exp ?? null,
+        tokenMeta,
         expectedIss:
           import.meta.env.VITE_SUPABASE_URL
             ? `${import.meta.env.VITE_SUPABASE_URL}/auth/v1`
@@ -116,23 +137,45 @@ export default function UploadForm() {
       // We must set auth and invoke on the same instance, otherwise the Authorization header
       // won't be included and the function returns 401.
       const functions = supabase.functions;
-      if (accessToken) functions.setAuth(accessToken);
+      if (normalizedAccessToken) functions.setAuth(normalizedAccessToken);
 
       const { data: extractionData, error: fnError } = await functions.invoke(
         "extract-form-schema",
         {
-          ...(accessToken
-            ? { headers: { Authorization: `Bearer ${accessToken}` } }
+          ...(normalizedAccessToken
+            ? { headers: { Authorization: `Bearer ${normalizedAccessToken}` } }
             : {}),
           body: { file_path: filePath, file_name: file.name },
         }
       );
 
       if (fnError) {
-        const errorMsg = typeof fnError === 'object' && fnError.context?.body
-          ? JSON.parse(fnError.context.body)?.error
-          : fnError.message;
-        throw new Error(errorMsg || "AI extraction failed");
+        const body = typeof fnError === "object" ? (fnError as any)?.context?.body : undefined;
+        const message = (fnError as any)?.message;
+
+        let bodySnippet = "";
+        if (typeof body === "string") bodySnippet = body.slice(0, 200);
+        else bodySnippet = body ? String(body).slice(0, 200) : "";
+
+        // Avoid crashing on non-JSON bodies (like the gateway's "Invalid JWT" payload).
+        let errorMsg = "";
+        if (typeof body === "string") {
+          try {
+            const parsed = JSON.parse(body);
+            errorMsg = parsed?.error ?? parsed?.message ?? bodySnippet;
+          } catch {
+            errorMsg = bodySnippet || message || "AI extraction failed";
+          }
+        } else {
+          errorMsg = message || "AI extraction failed";
+        }
+
+        console.error("[UploadForm] Edge function failed", {
+          status: (fnError as any)?.context?.status_code ?? null,
+          bodySnippet,
+          errorMsg,
+        });
+        throw new Error(errorMsg);
       }
       if (extractionData?.error) throw new Error(extractionData.error);
 

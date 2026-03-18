@@ -250,7 +250,7 @@ export default function UploadForm() {
                   <>
                     <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <p className="text-muted-foreground">{t("forms.dragToUpload")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, JPG, PNG</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, DOCX</p>
                   </>
                 )}
               </div>
@@ -258,7 +258,7 @@ export default function UploadForm() {
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                accept=".pdf,.docx,.jpg,.jpeg,.png"
+                accept=".pdf,.docx"
                 onChange={e => setFile(e.target.files?.[0] || null)}
               />
             </div>

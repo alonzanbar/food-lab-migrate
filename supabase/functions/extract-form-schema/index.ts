@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 // Use an ESM CDN import (esm.sh) so Deno/Supabase Edge Functions can resolve it without relying on `npm:` type resolution.
-import mammoth from "https://esm.sh/mammoth@1.8.0";
 
 // #region TypeScript Deno global
 // This file runs on Supabase Edge (Deno), but the repository TypeScript tooling may be using a Node/DOM
@@ -19,14 +18,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VISUAL_TYPES: Record<string, string> = {
-  pdf: "application/pdf",
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-};
+const SUPPORTED_EXTS = new Set(["pdf", "docx"]);
 
-const DOC_TYPES = new Set(["docx"]);
+function getMimeTypeFromExt(ext: string) {
+  switch (ext) {
+    case "pdf":
+      return "application/pdf";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    default:
+      return "application/octet-stream";
+  }
+}
 
 const systemPrompt = `You are a form extraction AI for food factory quality control forms.
 You analyze uploaded factory documents (forms, checklists, tables) and extract all fillable fields.
@@ -55,80 +58,83 @@ Return the extracted data as a structured response.`;
 const extractionTools = [
   {
     type: "function",
-    function: {
-      name: "extract_form_schema",
-      description: "Extract structured form schema from a factory document",
-      parameters: {
-        type: "object",
-        properties: {
-          metadata: {
+    name: "extract_form_schema",
+    description: "Extract structured form schema from a factory document",
+    strict: true,
+    parameters: {
+      type: "object",
+      properties: {
+        metadata: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Form title in Hebrew" },
+            form_number: { type: "string", description: "Form number/code" },
+            type: { type: "string", description: "Form type (CCP, checklist, log, etc.)" },
+          },
+          required: ["title"],
+        },
+        fields: {
+          type: "array",
+          items: {
             type: "object",
             properties: {
-              title: { type: "string", description: "Form title in Hebrew" },
-              form_number: { type: "string", description: "Form number/code" },
-              type: { type: "string", description: "Form type (CCP, checklist, log, etc.)" },
-            },
-            required: ["title"],
-          },
-          fields: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                label: { type: "string" },
-                type: { type: "string", enum: ["text", "number", "boolean", "date", "time", "textarea", "select"] },
-                required: { type: "boolean" },
-                options: { type: "array", items: { type: "string" } },
-                semantic: {
-                  type: "object",
-                  properties: {
-                    concept: { type: "string" },
-                    value_type: { type: "string" },
-                    unit: { type: "string" },
-                    process_step: { type: "string" },
-                    confidence: { type: "number" },
-                  },
-                  required: ["concept", "value_type", "confidence"],
-                },
+              id: { type: "string" },
+              label: { type: "string" },
+              type: {
+                type: "string",
+                enum: ["text", "number", "boolean", "date", "time", "textarea", "select"],
               },
-              required: ["id", "label", "type", "required", "semantic"],
+              required: { type: "boolean" },
+              options: { type: "array", items: { type: "string" } },
+              semantic: {
+                type: "object",
+                properties: {
+                  concept: { type: "string" },
+                  value_type: { type: "string" },
+                  unit: { type: "string" },
+                  process_step: { type: "string" },
+                  confidence: { type: "number" },
+                },
+                required: ["concept", "value_type", "confidence"],
+              },
             },
+            required: ["id", "label", "type", "required", "semantic"],
           },
         },
-        required: ["metadata", "fields"],
       },
+      required: ["metadata", "fields"],
     },
   },
 ];
 
-function buildVisualMessages(fileName: string, mimeType: string, base64: string) {
-  return [
-    { role: "system", content: systemPrompt },
-    {
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: `Please analyze this factory form document (${fileName}) and extract all fillable fields with their semantic metadata. The form is in Hebrew.`,
-        },
-        {
-          type: "image_url",
-          image_url: { url: `data:${mimeType};base64,${base64}` },
-        },
-      ],
-    },
-  ];
-}
+async function uploadFileToOpenAI(
+  openAiApiKey: string,
+  arrayBuffer: ArrayBuffer,
+  mimeType: string,
+  fileName: string,
+) {
+  const blob = new Blob([arrayBuffer], { type: mimeType });
+  const formData = new FormData();
 
-function buildTextMessages(fileName: string, htmlContent: string) {
-  return [
-    { role: "system", content: systemPrompt },
-    {
-      role: "user",
-      content: `Please analyze this factory form document (${fileName}) and extract all fillable fields with their semantic metadata. The form is in Hebrew.\n\nDocument content:\n\n${htmlContent}`,
-    },
-  ];
+  // Use `user_data` so the file can be used as a model input (`input_file`).
+  // Purpose value can vary, but `user_data` is the recommended one for model inputs.
+  formData.append("purpose", "user_data");
+  formData.append("file", blob, fileName);
+
+  const uploadResp = await fetch("https://api.openai.com/v1/files", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${openAiApiKey}` },
+    body: formData,
+  });
+
+  const uploadJson = await uploadResp.json().catch(() => null);
+  if (!uploadResp.ok || !uploadJson?.id) {
+    const openAiError =
+      uploadJson?.error?.message ?? uploadJson?.error ?? uploadResp.status;
+    throw new Error(`OpenAI file upload failed: ${openAiError}`);
+  }
+
+  return uploadJson.id as string;
 }
 
 serve(async (req) => {
@@ -211,21 +217,20 @@ serve(async (req) => {
     if (!file_path) throw new Error("file_path is required");
 
     const ext = (file_name || file_path).split(".").pop()?.toLowerCase() || "";
-    const isVisual = !!VISUAL_TYPES[ext];
-    const isDoc = DOC_TYPES.has(ext);
+    const isSupported = SUPPORTED_EXTS.has(ext);
 
     console.log("[extract-form-schema] request parsed", {
       ext,
-      isVisual,
-      isDoc,
+      isSupported,
       fileName: file_name ?? null,
       tenantIdFromPath: String(file_path).split("/")[0] ?? null,
     });
 
-    if (!isVisual && !isDoc) {
-      const hint = ext === "doc" ? " Please save as .docx first." : "";
+    if (!isSupported) {
       return new Response(
-        JSON.stringify({ error: `Unsupported file type: .${ext}.${hint} Supported: PDF, DOCX, JPG, PNG.` }),
+        JSON.stringify({
+          error: `Unsupported file type: .${ext}. Supported: DOCX, PDF.`,
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -285,27 +290,27 @@ serve(async (req) => {
     console.log("[extract-form-schema] download complete", {
       bytes: arrayBuffer.byteLength,
     });
-    let messages: any[];
+    const mimeType = getMimeTypeFromExt(ext);
+    const uploadFileName = file_name || `uploaded.${ext}`;
 
-    if (isDoc) {
-      // Extract HTML from DOC/DOCX using mammoth
-      console.log(`Converting ${ext} to HTML using mammoth...`);
-      const result = await mammoth.convertToHtml({ buffer: new Uint8Array(arrayBuffer) });
-      if (result.messages?.length) {
-        console.log("Mammoth warnings:", result.messages);
-      }
-      if (!result.value || result.value.trim().length === 0) {
-        throw new Error("Could not extract text from the document. The file may be empty or corrupted.");
-      }
-      messages = buildTextMessages(file_name || "uploaded file", result.value);
-    } else {
-      const base64 = btoa(
-        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
-      );
-      messages = buildVisualMessages(file_name || "uploaded file", VISUAL_TYPES[ext], base64);
-    }
+    console.log("[extract-form-schema] uploading to OpenAI files", {
+      mimeType,
+      uploadFileName,
+      bytes: arrayBuffer.byteLength,
+    });
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const openAiFileId = await uploadFileToOpenAI(
+      OPENAI_API_KEY,
+      arrayBuffer,
+      mimeType,
+      uploadFileName,
+    );
+
+    console.log("[extract-form-schema] OpenAI file uploaded", {
+      fileIdPrefix: openAiFileId.slice(0, 10),
+    });
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -313,9 +318,25 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages,
+        instructions: systemPrompt,
         tools: extractionTools,
-        tool_choice: { type: "function", function: { name: "extract_form_schema" } },
+        tool_choice: { type: "function", name: "extract_form_schema" },
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: `Please analyze this factory form document (${uploadFileName}) and extract all fillable fields with their semantic metadata. The form is in Hebrew.`,
+              },
+              {
+                type: "input_file",
+                file_id: openAiFileId,
+                filename: uploadFileName,
+              },
+            ],
+          },
+        ],
       }),
     });
 
@@ -338,14 +359,22 @@ serve(async (req) => {
     const aiResult = await response.json();
     console.log("AI result:", JSON.stringify(aiResult));
 
-    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      const content = aiResult.choices?.[0]?.message?.content;
-      console.error("No tool call in response, content:", content);
-      throw new Error("AI did not return structured data");
+    const fnCall = aiResult.output?.find(
+      (item: any) =>
+        item?.type === "function_call" &&
+        item?.name === "extract_form_schema" &&
+        typeof item?.arguments === "string",
+    );
+
+    if (!fnCall?.arguments) {
+      console.error("No function_call in OpenAI response output", {
+        output: aiResult.output,
+        outputText: aiResult.output_text ?? null,
+      });
+      throw new Error("AI did not return function_call arguments");
     }
 
-    const extracted = JSON.parse(toolCall.function.arguments);
+    const extracted = JSON.parse(fnCall.arguments);
 
     return new Response(JSON.stringify({ success: true, ...extracted }), {
       status: 200,

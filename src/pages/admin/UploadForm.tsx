@@ -66,26 +66,11 @@ export default function UploadForm() {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      // #region agent log: edge function auth injection (no secrets)
-      try {
-        fetch("http://127.0.0.1:7272/ingest/45a33b7d-9778-4253-ab68-f6f218c5630d", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "dfe2f2",
-          },
-          body: JSON.stringify({
-            sessionId: "dfe2f2",
-            hypothesisId: "B",
-            location: "UploadForm.tsx:before_functions_invoke",
-            message: "Setting Supabase Functions auth from current session",
-            data: { hasAccessToken: !!accessToken, hasSession: !!session },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-      } catch (_e) {
-        // ignore logging failures
-      }
+      // #region debug: edge function auth injection (no secrets)
+      console.log("[UploadForm] Setting Supabase Functions auth", {
+        hasAccessToken: !!accessToken,
+        hasSession: !!session,
+      });
       // #endregion
 
       if (accessToken) {

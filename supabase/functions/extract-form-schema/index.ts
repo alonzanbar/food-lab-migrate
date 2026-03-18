@@ -146,6 +146,16 @@ serve(async (req) => {
       throw new Error("Missing Supabase configuration");
     }
 
+    const authorizationHeader = req.headers.get("authorization") || "";
+
+    // #region debug: edge function entry (no secrets)
+    console.log("[extract-form-schema] handler entry", {
+      hasAuthorizationHeader: authorizationHeader.startsWith("Bearer "),
+      authHeaderLen: authorizationHeader.length,
+      hasOpenAIKey: !!OPENAI_API_KEY,
+    });
+    // #endregion
+
     const { file_path, file_name } = await req.json();
     if (!file_path) throw new Error("file_path is required");
 

@@ -70,10 +70,18 @@ const extractionTools = [
           additionalProperties: false,
           properties: {
             title: { type: "string", description: "Form title in Hebrew" },
-            form_number: { type: "string", description: "Form number/code" },
-            type: { type: "string", description: "Form type (CCP, checklist, log, etc.)" },
+            form_number: {
+              type: ["string", "null"],
+              description: "Form number/code",
+            },
+            type: {
+              type: ["string", "null"],
+              description: "Form type (CCP, checklist, log, etc.)",
+            },
           },
-          required: ["title"],
+          // With `strict: true` + `additionalProperties: false`, OpenAI requires
+          // `required` to include every key in `properties`.
+          required: ["title", "form_number", "type"],
         },
         fields: {
           type: "array",
@@ -88,21 +96,26 @@ const extractionTools = [
                 enum: ["text", "number", "boolean", "date", "time", "textarea", "select"],
               },
               required: { type: "boolean" },
-              options: { type: "array", items: { type: "string" } },
+              options: {
+                type: ["array", "null"],
+                items: { type: "string" },
+              },
               semantic: {
                 type: "object",
                 additionalProperties: false,
                 properties: {
                   concept: { type: "string" },
                   value_type: { type: "string" },
-                  unit: { type: "string" },
-                  process_step: { type: "string" },
+                  unit: { type: ["string", "null"] },
+                  process_step: { type: ["string", "null"] },
                   confidence: { type: "number" },
                 },
-                required: ["concept", "value_type", "confidence"],
+                // With `strict: true` + `additionalProperties: false`, the
+                // required list must include every key in `properties`.
+                required: ["concept", "value_type", "unit", "process_step", "confidence"],
               },
             },
-            required: ["id", "label", "type", "required", "semantic"],
+            required: ["id", "label", "type", "required", "options", "semantic"],
           },
         },
       },

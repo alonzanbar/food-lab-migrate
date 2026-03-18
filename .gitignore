@@ -11,6 +11,10 @@ node_modules
 dist
 .env
 
+# Firebase / GCP
+.github/firebase-sa-key.json
+*-sa-key.json
+
 # Supabase
 supabase/.temp/
 dist-ssr

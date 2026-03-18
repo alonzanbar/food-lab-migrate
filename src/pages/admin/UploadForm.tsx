@@ -73,11 +73,14 @@ export default function UploadForm() {
       });
       // #endregion
 
-      if (accessToken) {
-        supabase.functions.setAuth(accessToken);
-      }
+      // IMPORTANT:
+      // `supabase.functions` is a getter that creates a new client instance each time.
+      // We must set auth and invoke on the same instance, otherwise the Authorization header
+      // won't be included and the function returns 401.
+      const functions = supabase.functions;
+      if (accessToken) functions.setAuth(accessToken);
 
-      const { data: extractionData, error: fnError } = await supabase.functions.invoke(
+      const { data: extractionData, error: fnError } = await functions.invoke(
         "extract-form-schema",
         {
           body: { file_path: filePath, file_name: file.name },

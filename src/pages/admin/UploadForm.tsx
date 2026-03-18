@@ -63,8 +63,46 @@ export default function UploadForm() {
 
       // Ensure the edge function invocation includes the current user's JWT.
       // Without this, Supabase Functions may respond with 401 even if the user is logged in.
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      let session = initialSession;
+      let accessToken = session?.access_token;
+
+      // Refresh the session immediately before invoking the Edge Function.
+      // This helps when the stored access token is stale/expired or minted for a previous project.
+      if (session) {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.warn("[UploadForm] refreshSession failed:", refreshError);
+        } else {
+          session = refreshData.session ?? session;
+          accessToken = session?.access_token;
+        }
+      }
+
+      const decodeJwtPayload = (token: string) => {
+        try {
+          const [, payloadB64] = token.split(".");
+          if (!payloadB64) return null;
+          const base64 = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
+          const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+          const json = atob(padded);
+          return JSON.parse(json);
+        } catch {
+          return null;
+        }
+      };
+
+      const jwtMeta = accessToken ? decodeJwtPayload(accessToken) : null;
+      console.log("[UploadForm] Edge function auth metadata", {
+        hasAccessToken: !!accessToken,
+        hasSession: !!session,
+        jwtIss: jwtMeta?.iss ?? null,
+        jwtExp: jwtMeta?.exp ?? null,
+        expectedIss:
+          import.meta.env.VITE_SUPABASE_URL
+            ? `${import.meta.env.VITE_SUPABASE_URL}/auth/v1`
+            : null,
+      });
 
       // #region debug: edge function auth injection (no secrets)
       console.log("[UploadForm] Setting Supabase Functions auth", {

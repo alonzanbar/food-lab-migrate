@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "target": "app",
+    "site": "food-lab-web",
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   }

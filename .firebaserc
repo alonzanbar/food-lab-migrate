@@ -1,12 +1,5 @@
 {
   "projects": {
     "default": "food-lab-app"
-  },
-  "targets": {
-    "food-lab-app": {
-      "hosting": {
-        "app": "food-lab-web"
-      }
-    }
   }
 }

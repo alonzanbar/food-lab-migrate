@@ -332,7 +332,6 @@ serve(async (req) => {
               {
                 type: "input_file",
                 file_id: openAiFileId,
-                filename: uploadFileName,
               },
             ],
           },

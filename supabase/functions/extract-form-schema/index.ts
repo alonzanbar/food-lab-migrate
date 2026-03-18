@@ -181,6 +181,11 @@ serve(async (req) => {
       },
     });
 
+    console.log("[extract-form-schema] auth user check status", {
+      ok: userResp.ok,
+      status: userResp.status,
+    });
+
     if (!userResp.ok) {
       // Do not leak token details.
       return new Response(JSON.stringify({ error: "Invalid JWT" }), {
@@ -198,12 +203,24 @@ serve(async (req) => {
       });
     }
 
+    console.log("[extract-form-schema] authenticated user", {
+      userId,
+    });
+
     const { file_path, file_name } = await req.json();
     if (!file_path) throw new Error("file_path is required");
 
     const ext = (file_name || file_path).split(".").pop()?.toLowerCase() || "";
     const isVisual = !!VISUAL_TYPES[ext];
     const isDoc = DOC_TYPES.has(ext);
+
+    console.log("[extract-form-schema] request parsed", {
+      ext,
+      isVisual,
+      isDoc,
+      fileName: file_name ?? null,
+      tenantIdFromPath: String(file_path).split("/")[0] ?? null,
+    });
 
     if (!isVisual && !isDoc) {
       const hint = ext === "doc" ? " Please save as .docx first." : "";
@@ -223,6 +240,16 @@ serve(async (req) => {
       .eq("id", userId)
       .single();
 
+    console.log("[extract-form-schema] tenant check", {
+      tenantIdFromPath,
+      profileTenantId: profile?.tenant_id ?? null,
+      hasProfile: !!profile,
+      profileError: profileError ? profileError.message : null,
+      tenantMatch: profile?.tenant_id
+        ? String(profile.tenant_id) === tenantIdFromPath
+        : false,
+    });
+
     if (profileError || !profile?.tenant_id) {
       return new Response(JSON.stringify({ error: "Unauthorized (missing tenant)" }), {
         status: 403,
@@ -237,15 +264,27 @@ serve(async (req) => {
       });
     }
 
+    console.log("[extract-form-schema] downloading from storage", {
+      bucket: "form-uploads",
+      filePath: file_path,
+    });
+
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("form-uploads")
       .download(file_path);
 
     if (downloadError || !fileData) {
+      console.error("[extract-form-schema] download error", {
+        message: downloadError?.message ?? null,
+        name: downloadError?.name ?? null,
+      });
       throw new Error(`Failed to download file: ${downloadError?.message}`);
     }
 
     const arrayBuffer = await fileData.arrayBuffer();
+    console.log("[extract-form-schema] download complete", {
+      bytes: arrayBuffer.byteLength,
+    });
     let messages: any[];
 
     if (isDoc) {
@@ -313,7 +352,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("extract-form-schema error:", error);
+    console.error("extract-form-schema error:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null,
+    });
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

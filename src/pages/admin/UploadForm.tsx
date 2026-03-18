@@ -83,6 +83,9 @@ export default function UploadForm() {
       const { data: extractionData, error: fnError } = await functions.invoke(
         "extract-form-schema",
         {
+          ...(accessToken
+            ? { headers: { Authorization: `Bearer ${accessToken}` } }
+            : {}),
           body: { file_path: filePath, file_name: file.name },
         }
       );

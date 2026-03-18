@@ -63,9 +63,11 @@ const extractionTools = [
     strict: true,
     parameters: {
       type: "object",
+      additionalProperties: false,
       properties: {
         metadata: {
           type: "object",
+          additionalProperties: false,
           properties: {
             title: { type: "string", description: "Form title in Hebrew" },
             form_number: { type: "string", description: "Form number/code" },
@@ -77,6 +79,7 @@ const extractionTools = [
           type: "array",
           items: {
             type: "object",
+            additionalProperties: false,
             properties: {
               id: { type: "string" },
               label: { type: "string" },
@@ -88,6 +91,7 @@ const extractionTools = [
               options: { type: "array", items: { type: "string" } },
               semantic: {
                 type: "object",
+                additionalProperties: false,
                 properties: {
                   concept: { type: "string" },
                   value_type: { type: "string" },

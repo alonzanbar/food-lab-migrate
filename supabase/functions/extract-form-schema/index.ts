@@ -146,7 +146,8 @@ serve(async (req) => {
       throw new Error("Missing Supabase configuration");
     }
 
-    const authorizationHeader = req.headers.get("authorization") || "";
+    const authorizationHeader =
+      req.headers.get("Authorization") || req.headers.get("authorization") || "";
 
     // #region debug: edge function entry (no secrets)
     console.log("[extract-form-schema] handler entry", {
@@ -155,6 +156,47 @@ serve(async (req) => {
       hasOpenAIKey: !!OPENAI_API_KEY,
     });
     // #endregion
+
+    // Manual JWT verification (gateway verification is disabled via --no-verify-jwt).
+    // We verify the user token by calling the Supabase Auth "get current user" endpoint.
+    if (!authorizationHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Missing or invalid Authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const accessToken = authorizationHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!accessToken) {
+      return new Response(JSON.stringify({ error: "Missing access token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+
+    if (!userResp.ok) {
+      // Do not leak token details.
+      return new Response(JSON.stringify({ error: "Invalid JWT" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userJson = await userResp.json();
+    const userId = userJson?.id;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Invalid JWT" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { file_path, file_name } = await req.json();
     if (!file_path) throw new Error("file_path is required");
@@ -172,6 +214,28 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Tenant authorization: file_path starts with `${tenantId}/...`
+    const tenantIdFromPath = String(file_path).split("/")[0];
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("tenant_id")
+      .eq("id", userId)
+      .single();
+
+    if (profileError || !profile?.tenant_id) {
+      return new Response(JSON.stringify({ error: "Unauthorized (missing tenant)" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (String(profile.tenant_id) !== tenantIdFromPath) {
+      return new Response(JSON.stringify({ error: "Unauthorized (tenant mismatch)" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("form-uploads")

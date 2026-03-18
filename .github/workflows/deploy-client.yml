@@ -26,7 +26,7 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - run: npm ci
+      - run: npm install
 
       - uses: amondnet/vercel-action@v25
         with:

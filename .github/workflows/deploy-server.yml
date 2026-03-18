@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "supabase/**"
+      - ".github/workflows/deploy-server.yml"
+      - ".github/DEPLOY.md"
   workflow_dispatch:
 
 jobs:

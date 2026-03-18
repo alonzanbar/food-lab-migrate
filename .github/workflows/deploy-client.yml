@@ -32,9 +32,8 @@ jobs:
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          # Your code expects VITE_SUPABASE_ANON_KEY. You can provide it from the
-          # same value you already store as VITE_SUPABASE_PUBLISHABLE_KEY.
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Your frontend reads VITE_SUPABASE_PUBLISHABLE_KEY (see src/integrations/supabase/client.ts).
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"

@@ -1,6 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import mammoth from "npm:mammoth@1.8.0";
+// Use an ESM CDN import (esm.sh) so Deno/Supabase Edge Functions can resolve it without relying on `npm:` type resolution.
+import mammoth from "https://esm.sh/mammoth@1.8.0";
+
+// #region TypeScript Deno global
+// This file runs on Supabase Edge (Deno), but the repository TypeScript tooling may be using a Node/DOM
+// environment that doesn't define the global `Deno` symbol, causing TS to report "Cannot find name 'Deno'".
+declare const Deno: {
+  env: {
+    get: (key: string) => string | undefined;
+  };
+};
+// #endregion
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -208,7 +219,7 @@ serve(async (req) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const aiResult = await response.json();

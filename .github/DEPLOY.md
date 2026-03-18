@@ -22,6 +22,7 @@ Add these in **GitHub repo → Settings → Secrets and variables → Actions**.
 |--------|-----------------|
 | `SUPABASE_ACCESS_TOKEN` | [Supabase Dashboard](https://supabase.com/dashboard/account/tokens) → Access Tokens |
 | `SUPABASE_PROJECT_REF` | Project ref from URL: `https://supabase.com/dashboard/project/<ref>` (e.g. `fuptpriittbgnmzqehsa`) |
+| `OPENAI_API_KEY` | [OpenAI API Keys](https://platform.openai.com/api-keys) – used by `extract-form-schema` Edge Function |
 
 ## Workflows
 

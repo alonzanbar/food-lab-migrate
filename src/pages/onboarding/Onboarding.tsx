@@ -15,7 +15,7 @@ async function getAccessToken(): Promise<string | null> {
 }
 
 export default function Onboarding() {
-  const { user, tenantId, refresh } = useAuth();
+  const { user, tenantId, isSuperuser, refresh } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [tenantName, setTenantName] = useState("");
@@ -87,7 +87,7 @@ export default function Onboarding() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold font-display">{t("onboarding.welcome")}</h1>
           <p className="text-muted-foreground">
-            {isDone ? t("onboarding.workspaceReady") : t("onboarding.welcomeSubtitle")}
+            {isDone ? t("onboarding.workspaceReady") : isSuperuser ? t("onboarding.welcomeSubtitle") : t("onboarding.welcomeSubtitleJoinOnly")}
           </p>
         </div>
 
@@ -102,30 +102,32 @@ export default function Onboarding() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="card-hover">
-              <CardHeader>
-                <CardTitle>{t("onboarding.createTenant")}</CardTitle>
-                <CardDescription>{t("onboarding.createTenantDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-4" onSubmit={handleCreateTenant}>
-                  <div className="space-y-2">
-                    <Label htmlFor="tenantName">{t("onboarding.tenantName")}</Label>
-                    <Input
-                      id="tenantName"
-                      value={tenantName}
-                      onChange={(e) => setTenantName(e.target.value)}
-                      placeholder={t("onboarding.tenantNamePlaceholder")}
-                      required
-                    />
-                  </div>
-                  <Button className="w-full" type="submit" disabled={loadingCreate || !tenantName.trim()}>
-                    {loadingCreate ? t("onboarding.creating") : t("onboarding.createTenant")}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+          <div className={isSuperuser ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "max-w-md mx-auto"}>
+            {isSuperuser && (
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle>{t("onboarding.createTenant")}</CardTitle>
+                  <CardDescription>{t("onboarding.createTenantDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form className="space-y-4" onSubmit={handleCreateTenant}>
+                    <div className="space-y-2">
+                      <Label htmlFor="tenantName">{t("onboarding.tenantName")}</Label>
+                      <Input
+                        id="tenantName"
+                        value={tenantName}
+                        onChange={(e) => setTenantName(e.target.value)}
+                        placeholder={t("onboarding.tenantNamePlaceholder")}
+                        required
+                      />
+                    </div>
+                    <Button className="w-full" type="submit" disabled={loadingCreate || !tenantName.trim()}>
+                      {loadingCreate ? t("onboarding.creating") : t("onboarding.createTenant")}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="card-hover">
               <CardHeader>

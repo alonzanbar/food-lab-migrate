@@ -132,6 +132,7 @@ export const translations = {
   // Onboarding
   "onboarding.welcome": { he: "ברוכים הבאים", en: "Welcome" },
   "onboarding.welcomeSubtitle": { he: "צור ארגון או הצטרף עם הזמנה.", en: "Create a workspace or join with an invite." },
+  "onboarding.welcomeSubtitleJoinOnly": { he: "הצטרף לארגון עם קוד הזמנה מהמנהל שלך.", en: "Join a workspace with an invite code from your administrator." },
   "onboarding.ready": { he: "הכל מוכן", en: "All set" },
   "onboarding.readyDesc": { he: "אפשר להמשיך לאפליקציה.", en: "You can continue into the app." },
   "onboarding.workspaceReady": { he: "סביבת העבודה שלך מוכנה.", en: "Your workspace is ready." },
@@ -171,6 +172,25 @@ export const translations = {
   "invites.copyToken": { he: "העתק קוד", en: "Copy token" },
   "invites.copied": { he: "הועתק", en: "Copied" },
   "invites.inviteCreated": { he: "ההזמנה נוצרה", en: "Invite created" },
+
+  // Superuser
+  "superuser.title": { he: "מנהל פלטפורמה", en: "Platform admin" },
+  "superuser.tenants": { he: "ארגונים", en: "Tenants" },
+  "superuser.createTenant": { he: "צור ארגון", en: "Create tenant" },
+  "superuser.createTenantDesc": { he: "צור ארגון חדש במערכת.", en: "Create a new tenant in the system." },
+  "superuser.noTenants": { he: "אין ארגונים עדיין", en: "No tenants yet" },
+  "superuser.viewDetails": { he: "פרטים", en: "View details" },
+  "superuser.createdAt": { he: "נוצר בתאריך", en: "Created at" },
+  "superuser.backToApp": { he: "חזרה לאפליקציה", en: "Back to app" },
+  "superuser.tenantDetails": { he: "פרטי ארגון", en: "Tenant details" },
+  "superuser.tenantDetailsDesc": { he: "ערוך וצפה בפרטי הארגון.", en: "Edit and view tenant details." },
+  "superuser.members": { he: "חברים", en: "Members" },
+  "superuser.membersDesc": { he: "משתמשים בארגון זה.", en: "Users in this tenant." },
+  "superuser.noMembers": { he: "אין חברים", en: "No members" },
+  "superuser.deactivate": { he: "השבת", en: "Deactivate" },
+  "superuser.activate": { he: "הפעל", en: "Activate" },
+  "superuser.tenantActivated": { he: "הארגון הופעל", en: "Tenant activated" },
+  "superuser.tenantDeactivated": { he: "הארגון הושבת", en: "Tenant deactivated" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

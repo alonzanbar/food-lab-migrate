@@ -11,15 +11,29 @@ serve(async (req) => {
     const tenantName = typeof name === "string" ? name.trim() : "";
     if (!tenantName) return json(400, { error: "name is required" });
 
+    // Only superusers can create tenants
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isSuperuser = (roles || []).some((r: { role?: string }) => r?.role === "superuser");
+    if (!isSuperuser) {
+      return json(403, { error: "Only superusers can create tenants" });
+    }
+
     // Create tenant
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from("tenants")
-      .insert({ name: tenantName })
-      .select("id, name")
+      .insert({
+        name: tenantName,
+        status: "active",
+        created_by: userId,
+      })
+      .select("id, name, status, created_at")
       .single();
     if (tenantError || !tenant) return json(500, { error: tenantError?.message ?? "Failed to create tenant" });
 
-    // Assign user to tenant (only if not already assigned)
+    // Assign creator to tenant only if they have no tenant yet
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("tenant_id")
@@ -27,22 +41,19 @@ serve(async (req) => {
       .single();
     if (profileError) return json(500, { error: profileError.message });
 
-    if (profile?.tenant_id && String(profile.tenant_id) !== String(tenant.id)) {
-      return json(409, { error: "User already belongs to a tenant" });
-    }
+    if (!profile?.tenant_id) {
+      const { error: profileUpdateError } = await supabaseAdmin
+        .from("profiles")
+        .update({ tenant_id: tenant.id })
+        .eq("id", userId);
+      if (profileUpdateError) return json(500, { error: profileUpdateError.message });
 
-    const { error: profileUpdateError } = await supabaseAdmin
-      .from("profiles")
-      .update({ tenant_id: tenant.id })
-      .eq("id", userId);
-    if (profileUpdateError) return json(500, { error: profileUpdateError.message });
-
-    // Grant admin role
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: userId, role: "admin" });
-    if (roleError && !String(roleError.message).toLowerCase().includes("duplicate")) {
-      return json(500, { error: roleError.message });
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role: "admin" });
+      if (roleError && !String(roleError.message).toLowerCase().includes("duplicate")) {
+        return json(500, { error: roleError.message });
+      }
     }
 
     return json(200, { tenant });

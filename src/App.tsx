@@ -22,11 +22,15 @@ import SubmissionSuccess from "./pages/worker/SubmissionSuccess";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/onboarding/Onboarding";
 import AcceptInvite from "./pages/onboarding/AcceptInvite";
+import SuperuserLayout from "./pages/superuser/SuperuserLayout";
+import TenantList from "./pages/superuser/TenantList";
+import TenantDetail from "./pages/superuser/TenantDetail";
+import CreateTenant from "./pages/superuser/CreateTenant";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, role, tenantId, loading } = useAuth();
+  const { user, role, tenantId, isSuperuser, loading } = useAuth();
 
   if (loading) {
     return (
@@ -50,12 +54,18 @@ function AppRoutes() {
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/onboarding/accept" element={<AcceptInvite />} />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/superuser" element={isSuperuser ? <SuperuserLayout /> : <Navigate to="/onboarding" replace />}>
+          <Route index element={<Navigate to="/superuser/tenants" replace />} />
+          <Route path="tenants" element={<TenantList />} />
+          <Route path="tenants/create" element={<CreateTenant />} />
+          <Route path="tenants/:id" element={<TenantDetail />} />
+        </Route>
+        <Route path="*" element={<Navigate to={isSuperuser ? "/superuser/tenants" : "/onboarding"} replace />} />
       </Routes>
     );
   }
 
-  // Redirect based on role
+  // Redirect based on role (superuser with tenant uses admin/worker from that tenant)
   const defaultPath = role === "admin" ? "/admin/forms" : "/worker";
 
   return (
@@ -84,6 +94,13 @@ function AppRoutes() {
 
       <Route path="/onboarding" element={<Navigate to={defaultPath} replace />} />
       <Route path="/onboarding/accept" element={<Navigate to={defaultPath} replace />} />
+
+      <Route path="/superuser" element={isSuperuser ? <SuperuserLayout /> : <Navigate to={defaultPath} replace />}>
+        <Route index element={<Navigate to="/superuser/tenants" replace />} />
+        <Route path="tenants" element={<TenantList />} />
+        <Route path="tenants/create" element={<CreateTenant />} />
+        <Route path="tenants/:id" element={<TenantDetail />} />
+      </Route>
 
       <Route path="*" element={<NotFound />} />
     </Routes>

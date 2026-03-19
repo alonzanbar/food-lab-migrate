@@ -3,10 +3,10 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Globe, FileText, Shield } from "lucide-react";
+import { LogOut, Globe, FileText, Shield, Building2 } from "lucide-react";
 
 export default function WorkerLayout() {
-  const { signOut, user, role } = useAuth();
+  const { signOut, user, role, isSuperuser } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const navigate = useNavigate();
 
@@ -24,6 +24,15 @@ export default function WorkerLayout() {
           <h1 className="text-lg font-bold font-display">{t("app.name")}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {isSuperuser && (
+            <button
+              onClick={() => navigate("/superuser/tenants")}
+              className="p-2 text-accent hover:text-foreground"
+              title={t("superuser.title")}
+            >
+              <Building2 className="w-5 h-5" />
+            </button>
+          )}
           {role === "admin" && (
             <button
               onClick={() => navigate("/admin/forms")}

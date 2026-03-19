@@ -5,7 +5,8 @@ import type { User, Session } from "@supabase/supabase-js";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  role: "admin" | "worker" | null;
+  role: "admin" | "worker" | "superuser" | null;
+  isSuperuser: boolean;
   tenantId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -19,19 +20,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<"admin" | "worker" | null>(null);
+  const [role, setRole] = useState<"admin" | "worker" | "superuser" | null>(null);
+  const [isSuperuser, setIsSuperuser] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUserMeta = async (userId: string) => {
-    // Get role
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    
-    if (roles && roles.length > 0) {
-      setRole(roles[0].role as "admin" | "worker");
+
+    const roleList = roles || [];
+    const hasSuperuser = roleList.some((r) => r.role === "superuser");
+    setIsSuperuser(hasSuperuser);
+
+    const tenantRole = roleList.find((r) => r.role === "admin" || r.role === "worker");
+    if (tenantRole) {
+      setRole(tenantRole.role as "admin" | "worker" | "superuser");
+    } else if (hasSuperuser) {
+      setRole("superuser");
     } else {
       setRole(null);
     }
@@ -67,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(() => fetchUserMeta(session.user.id), 0);
         } else {
           setRole(null);
+          setIsSuperuser(false);
           setTenantId(null);
         }
       }
@@ -92,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setIsSuperuser(false);
     setTenantId(null);
   };
 
@@ -103,12 +113,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchUserMeta(session.user.id);
     } else {
       setRole(null);
+      setIsSuperuser(false);
       setTenantId(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, tenantId, loading, signIn, signUp, signOut, refresh }}>
+    <AuthContext.Provider value={{ user, session, role, isSuperuser, tenantId, loading, signIn, signUp, signOut, refresh }}>
       {children}
     </AuthContext.Provider>
   );

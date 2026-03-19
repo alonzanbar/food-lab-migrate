@@ -1,1 +1,15 @@
 project_id = "fuptpriittbgnmzqehsa"
+
+# Disable gateway JWT verification so OPTIONS preflight reaches the function.
+# Auth is enforced manually in each function for POST requests.
+[functions.create-tenant]
+verify_jwt = false
+
+[functions.accept-invite]
+verify_jwt = false
+
+[functions.invite-user]
+verify_jwt = false
+
+[functions.extract-form-schema]
+verify_jwt = false

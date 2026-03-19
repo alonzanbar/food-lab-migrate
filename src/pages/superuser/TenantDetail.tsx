@@ -39,49 +39,52 @@ export default function TenantDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminFullName, setAdminFullName] = useState("");
   const [addAdminLoading, setAddAdminLoading] = useState(false);
-  const [lastInviteToken, setLastInviteToken] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    if (!id) return;
+    const { data: tenantData, error: tenantError } = await supabase
+      .from("tenants")
+      .select("id, name, status, created_at, created_by")
+      .eq("id", id)
+      .single();
+    if (tenantError || !tenantData) {
+      toast.error(tenantError?.message || "Tenant not found");
+      navigate("/superuser/tenants");
+      return;
+    }
+    setTenant(tenantData as Tenant);
+    setEditName(tenantData.name);
+
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("tenant_id", id);
+    const profileList = profiles || [];
+    const userIds = profileList.map((p) => p.id);
+
+    const { data: roles } = userIds.length > 0
+      ? await supabase.from("user_roles").select("user_id, role").in("user_id", userIds)
+      : { data: [] };
+    const roleMap = Object.fromEntries((roles || []).map((r) => [r.user_id, r.role]));
+
+    const memberList: Member[] = profileList.map((p) => ({
+      id: p.id,
+      full_name: p.full_name,
+      role: roleMap[p.id] || "-",
+    }));
+    setMembers(memberList);
+  };
 
   useEffect(() => {
     if (!isSuperuser || !id) {
       navigate("/superuser/tenants");
       return;
     }
-    const fetch = async () => {
-      const { data: tenantData, error: tenantError } = await supabase
-        .from("tenants")
-        .select("id, name, status, created_at, created_by")
-        .eq("id", id)
-        .single();
-      if (tenantError || !tenantData) {
-        toast.error(tenantError?.message || "Tenant not found");
-        navigate("/superuser/tenants");
-        return;
-      }
-      setTenant(tenantData as Tenant);
-      setEditName(tenantData.name);
-
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .eq("tenant_id", id);
-      const profileList = profiles || [];
-      const userIds = profileList.map((p) => p.id);
-
-      const { data: roles } = userIds.length > 0
-        ? await supabase.from("user_roles").select("user_id, role").in("user_id", userIds)
-        : { data: [] };
-      const roleMap = Object.fromEntries((roles || []).map((r) => [r.user_id, r.role]));
-
-      const memberList: Member[] = profileList.map((p) => ({
-        id: p.id,
-        full_name: p.full_name,
-        role: roleMap[p.id] || "-",
-      }));
-      setMembers(memberList);
-      setLoading(false);
-    };
-    fetch();
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
   }, [id, isSuperuser, navigate]);
 
   const handleSave = async () => {
@@ -123,9 +126,8 @@ export default function TenantDetail() {
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tenant || !adminEmail.trim()) return;
+    if (!tenant || !adminEmail.trim() || !adminPassword) return;
     setAddAdminLoading(true);
-    setLastInviteToken(null);
     try {
       const token = await getAccessToken();
       if (!token) throw new Error("Missing session");
@@ -134,28 +136,26 @@ export default function TenantDetail() {
       functions.setAuth(token);
       const { data, error } = await functions.invoke("assign-admin", {
         headers: { Authorization: `Bearer ${token}` },
-        body: { tenantId: tenant.id, email: adminEmail.trim() },
+        body: {
+          tenantId: tenant.id,
+          email: adminEmail.trim(),
+          password: adminPassword,
+          fullName: adminFullName.trim() || undefined,
+        },
       });
       if (error) throw error;
       if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
 
-      const inviteToken = (data as { invite?: { token?: string } })?.invite?.token;
-      if (inviteToken) {
-        setLastInviteToken(inviteToken);
-        setAdminEmail("");
-      }
-      toast.success(t("invites.inviteCreated"));
+      setAdminEmail("");
+      setAdminPassword("");
+      setAdminFullName("");
+      await fetchData();
+      toast.success(t("superuser.adminCreated"));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to create invite");
+      toast.error(err instanceof Error ? err.message : "Failed to create admin");
     } finally {
       setAddAdminLoading(false);
     }
-  };
-
-  const copyInviteLink = (tok: string) => {
-    const link = `${window.location.origin}/onboarding/accept?token=${encodeURIComponent(tok)}`;
-    navigator.clipboard.writeText(link);
-    toast.success(t("invites.copied"));
   };
 
   if (!isSuperuser) return null;
@@ -240,10 +240,10 @@ export default function TenantDetail() {
           <CardTitle>{t("superuser.addAdmin")}</CardTitle>
           <CardDescription>{t("superuser.addAdminDesc")}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="space-y-2" onSubmit={handleAddAdmin}>
-            <Label htmlFor="adminEmail">{t("invites.email")}</Label>
-            <div className="flex gap-2">
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleAddAdmin}>
+            <div className="space-y-2">
+              <Label htmlFor="adminEmail">{t("invites.email")}</Label>
               <Input
                 id="adminEmail"
                 type="email"
@@ -251,26 +251,34 @@ export default function TenantDetail() {
                 onChange={(e) => setAdminEmail(e.target.value)}
                 placeholder="admin@example.com"
                 dir="ltr"
-                className="flex-1"
+                required
               />
-              <Button type="submit" disabled={addAdminLoading || !adminEmail.trim()}>
-                {addAdminLoading ? t("common.loading") : t("superuser.addAdmin")}
-              </Button>
             </div>
-          </form>
-          {lastInviteToken && (
-            <div className="flex gap-2 items-center">
+            <div className="space-y-2">
+              <Label htmlFor="adminPassword">{t("auth.password")}</Label>
               <Input
-                value={`${window.location.origin}/onboarding/accept?token=${encodeURIComponent(lastInviteToken)}`}
-                readOnly
+                id="adminPassword"
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="••••••••"
                 dir="ltr"
-                className="text-sm"
+                required
               />
-              <Button variant="outline" size="sm" onClick={() => copyInviteLink(lastInviteToken)}>
-                {t("invites.copyLink")}
-              </Button>
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="adminFullName">{t("auth.fullName")} ({t("common.optional")})</Label>
+              <Input
+                id="adminFullName"
+                value={adminFullName}
+                onChange={(e) => setAdminFullName(e.target.value)}
+                placeholder={t("auth.fullName")}
+              />
+            </div>
+            <Button type="submit" disabled={addAdminLoading || !adminEmail.trim() || !adminPassword}>
+              {addAdminLoading ? t("common.loading") : t("superuser.addAdmin")}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

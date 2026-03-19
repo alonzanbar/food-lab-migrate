@@ -36,10 +36,7 @@ serve(async (req) => {
       .single();
     if (profileError) return json(500, { error: profileError.message });
 
-    if (profile?.tenant_id && String(profile.tenant_id) !== String(invite.tenant_id)) {
-      return json(409, { error: "User already belongs to a different tenant" });
-    }
-
+    // Allow switching from demo/other tenant to invited tenant when email matches
     const { error: profileUpdateError } = await supabaseAdmin
       .from("profiles")
       .update({ tenant_id: invite.tenant_id })

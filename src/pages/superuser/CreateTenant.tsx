@@ -14,17 +14,11 @@ async function getAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
-function parseEmails(text: string): string[] {
-  return text
-    .split(/[\n,;]+/)
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-interface Invite {
+interface AdminEntry {
+  id: string;
   email: string;
-  token: string;
-  role: string;
+  password: string;
+  fullName: string;
 }
 
 export default function CreateTenant() {
@@ -32,53 +26,60 @@ export default function CreateTenant() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [adminEmailsText, setAdminEmailsText] = useState("");
+  const [admins, setAdmins] = useState<AdminEntry[]>([
+    { id: crypto.randomUUID(), email: "", password: "", fullName: "" },
+  ]);
   const [loading, setLoading] = useState(false);
-  const [invites, setInvites] = useState<Invite[] | null>(null);
+
+  const addAdmin = () => {
+    setAdmins((prev) => [...prev, { id: crypto.randomUUID(), email: "", password: "", fullName: "" }]);
+  };
+
+  const removeAdmin = (id: string) => {
+    if (admins.length <= 1) return;
+    setAdmins((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const updateAdmin = (id: string, field: keyof AdminEntry, value: string) => {
+    setAdmins((prev) => prev.map((a) => (a.id === id ? { ...a, [field]: value } : a)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSuperuser || !name.trim()) return;
+    const validAdmins = admins.filter((a) => a.email.trim() && a.password);
+    if (validAdmins.length === 0) {
+      toast.error(t("superuser.addAtLeastOneAdmin"));
+      return;
+    }
     setLoading(true);
-    setInvites(null);
     try {
       const token = await getAccessToken();
       if (!token) throw new Error("Missing session");
-
-      const adminEmails = parseEmails(adminEmailsText);
 
       const functions = supabase.functions;
       functions.setAuth(token);
       const { data, error } = await functions.invoke("create-tenant", {
         headers: { Authorization: `Bearer ${token}` },
-        body: { name: name.trim(), adminEmails },
+        body: {
+          name: name.trim(),
+          admins: validAdmins.map((a) => ({
+            email: a.email.trim().toLowerCase(),
+            password: a.password,
+            fullName: a.fullName.trim() || undefined,
+          })),
+        },
       });
       if (error) throw error;
       if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
 
-      const res = data as { tenant?: unknown; invites?: Invite[] };
-      if (res.invites?.length) {
-        setInvites(res.invites);
-        toast.success(t("superuser.tenantCreatedWithInvites"));
-      } else {
-        toast.success(t("onboarding.tenantCreated"));
-        navigate("/superuser/tenants");
-      }
+      toast.success(t("onboarding.tenantCreated"));
+      navigate("/superuser/tenants");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create tenant");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDone = () => {
-    navigate("/superuser/tenants");
-  };
-
-  const copyInviteLink = (token: string) => {
-    const link = `${window.location.origin}/onboarding/accept?token=${encodeURIComponent(token)}`;
-    navigator.clipboard.writeText(link);
-    toast.success(t("invites.copied"));
   };
 
   if (!isSuperuser) {
@@ -95,64 +96,85 @@ export default function CreateTenant() {
         <h2 className="text-2xl font-bold font-display">{t("superuser.createTenant")}</h2>
       </div>
 
-      {invites ? (
-        <Card className="card-hover">
-          <CardHeader>
-            <CardTitle>{t("superuser.adminInvites")}</CardTitle>
-            <CardDescription>{t("superuser.adminInvitesDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <Card className="card-hover">
+        <CardHeader>
+          <CardTitle>{t("superuser.createTenant")}</CardTitle>
+          <CardDescription>{t("superuser.createTenantDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              {invites.map((inv) => (
-                <div key={inv.email} className="flex items-center justify-between gap-2 rounded-md border p-3">
-                  <span className="text-sm font-medium" dir="ltr">{inv.email}</span>
-                  <Button variant="outline" size="sm" onClick={() => copyInviteLink(inv.token)}>
-                    {t("invites.copyLink")}
-                  </Button>
+              <Label htmlFor="tenantName">{t("onboarding.tenantName")}</Label>
+              <Input
+                id="tenantName"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("onboarding.tenantNamePlaceholder")}
+                required
+              />
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>{t("superuser.admins")}</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addAdmin}>
+                  {t("superuser.addAnotherAdmin")}
+                </Button>
+              </div>
+              {admins.map((admin) => (
+                <div key={admin.id} className="rounded-md border p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-muted-foreground">{t("superuser.admin")} #{admins.indexOf(admin) + 1}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAdmin(admin.id)}
+                      disabled={admins.length <= 1}
+                    >
+                      {t("common.delete")}
+                    </Button>
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="space-y-1">
+                      <Label>{t("invites.email")}</Label>
+                      <Input
+                        type="email"
+                        value={admin.email}
+                        onChange={(e) => updateAdmin(admin.id, "email", e.target.value)}
+                        placeholder="admin@example.com"
+                        dir="ltr"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>{t("auth.password")}</Label>
+                      <Input
+                        type="password"
+                        value={admin.password}
+                        onChange={(e) => updateAdmin(admin.id, "password", e.target.value)}
+                        placeholder="••••••••"
+                        dir="ltr"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>{t("auth.fullName")} ({t("common.optional")})</Label>
+                      <Input
+                        value={admin.fullName}
+                        onChange={(e) => updateAdmin(admin.id, "fullName", e.target.value)}
+                        placeholder={t("auth.fullName")}
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
-            <Button onClick={handleDone} className="w-full">
-              {t("superuser.done")}
+            <Button type="submit" className="w-full" disabled={loading || !name.trim()}>
+              {loading ? t("onboarding.creating") : t("superuser.createTenant")}
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="card-hover">
-          <CardHeader>
-            <CardTitle>{t("superuser.createTenant")}</CardTitle>
-            <CardDescription>{t("superuser.createTenantDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="tenantName">{t("onboarding.tenantName")}</Label>
-                <Input
-                  id="tenantName"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t("onboarding.tenantNamePlaceholder")}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="adminEmails">{t("superuser.adminEmails")}</Label>
-                <textarea
-                  id="adminEmails"
-                  value={adminEmailsText}
-                  onChange={(e) => setAdminEmailsText(e.target.value)}
-                  placeholder={t("superuser.adminEmailsPlaceholder")}
-                  className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  dir="ltr"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading || !name.trim()}>
-                {loading ? t("onboarding.creating") : t("superuser.createTenant")}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

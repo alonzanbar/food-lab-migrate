@@ -44,6 +44,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/onboarding/accept" element={<AcceptInvite />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -93,7 +94,7 @@ function AppRoutes() {
       </Route>
 
       <Route path="/onboarding" element={<Navigate to={defaultPath} replace />} />
-      <Route path="/onboarding/accept" element={<Navigate to={defaultPath} replace />} />
+      <Route path="/onboarding/accept" element={<AcceptInvite />} />
 
       <Route path="/superuser" element={isSuperuser ? <SuperuserLayout /> : <Navigate to={defaultPath} replace />}>
         <Route index element={<Navigate to="/superuser/tenants" replace />} />

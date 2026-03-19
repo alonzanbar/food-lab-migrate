@@ -40,6 +40,10 @@ export const translations = {
   "auth.welcomeSubtitle": { he: "ניהול טפסים דיגיטליים למפעלי מזון", en: "Digital form management for food factories" },
   "auth.signupSuccess": { he: "ההרשמה הצליחה! התחבר כעת.", en: "Signed up! Please log in." },
   "auth.loginError": { he: "שגיאה בהתחברות", en: "Login error" },
+  "auth.magicLink": { he: "שלח קישור התחברות לדוא״ל", en: "Send sign-in link to email" },
+  "auth.magicLinkSent": { he: "נשלח קישור לדוא״ל. בדוק את תיבת הדואר.", en: "Check your email for the sign-in link." },
+  "auth.magicLinkDesc": { he: "ללא סיסמה – נשלח קישור לכתובת הדוא״ל שלך.", en: "No password needed – we'll send a link to your email." },
+  "auth.usePassword": { he: "התחבר עם סיסמה", en: "Sign in with password" },
 
   // Navigation
   "nav.forms": { he: "טפסים", en: "Forms" },
@@ -198,7 +202,12 @@ export const translations = {
   "superuser.tenantCreatedWithInvites": { he: "הארגון נוצר. שתף את קישורי ההזמנה.", en: "Tenant created. Share the invite links." },
   "superuser.done": { he: "סיום", en: "Done" },
   "superuser.addAdmin": { he: "הוסף מנהל", en: "Add admin" },
-  "superuser.addAdminDesc": { he: "צור הזמנה למנהל חדש בארגון זה.", en: "Create an invite for a new admin in this tenant." },
+  "superuser.addAdminDesc": { he: "צור משתמש מנהל עם דוא״ל וסיסמה.", en: "Create an admin user with email and password." },
+  "superuser.admins": { he: "מנהלים", en: "Admins" },
+  "superuser.admin": { he: "מנהל", en: "Admin" },
+  "superuser.addAnotherAdmin": { he: "הוסף מנהל", en: "Add another admin" },
+  "superuser.addAtLeastOneAdmin": { he: "הוסף לפחות מנהל אחד עם דוא״ל וסיסמה.", en: "Add at least one admin with email and password." },
+  "superuser.adminCreated": { he: "המנהל נוצר בהצלחה.", en: "Admin created successfully." },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

@@ -11,5 +11,8 @@ verify_jwt = false
 [functions.invite-user]
 verify_jwt = false
 
+[functions.assign-admin]
+verify_jwt = false
+
 [functions.extract-form-schema]
 verify_jwt = false

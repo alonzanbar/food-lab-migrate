@@ -9,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+async function getAccessToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
+
 interface Tenant {
   id: string;
   name: string;
@@ -33,6 +38,9 @@ export default function TenantDetail() {
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [addAdminLoading, setAddAdminLoading] = useState(false);
+  const [lastInviteToken, setLastInviteToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSuperuser || !id) {
@@ -113,6 +121,43 @@ export default function TenantDetail() {
     }
   };
 
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenant || !adminEmail.trim()) return;
+    setAddAdminLoading(true);
+    setLastInviteToken(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error("Missing session");
+
+      const functions = supabase.functions;
+      functions.setAuth(token);
+      const { data, error } = await functions.invoke("assign-admin", {
+        headers: { Authorization: `Bearer ${token}` },
+        body: { tenantId: tenant.id, email: adminEmail.trim() },
+      });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+
+      const inviteToken = (data as { invite?: { token?: string } })?.invite?.token;
+      if (inviteToken) {
+        setLastInviteToken(inviteToken);
+        setAdminEmail("");
+      }
+      toast.success(t("invites.inviteCreated"));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to create invite");
+    } finally {
+      setAddAdminLoading(false);
+    }
+  };
+
+  const copyInviteLink = (tok: string) => {
+    const link = `${window.location.origin}/onboarding/accept?token=${encodeURIComponent(tok)}`;
+    navigator.clipboard.writeText(link);
+    toast.success(t("invites.copied"));
+  };
+
   if (!isSuperuser) return null;
   if (loading || !tenant) return <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>;
 
@@ -185,6 +230,45 @@ export default function TenantDetail() {
                   <span className="text-sm text-muted-foreground">{m.role}</span>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="card-hover">
+        <CardHeader>
+          <CardTitle>{t("superuser.addAdmin")}</CardTitle>
+          <CardDescription>{t("superuser.addAdminDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form className="space-y-2" onSubmit={handleAddAdmin}>
+            <Label htmlFor="adminEmail">{t("invites.email")}</Label>
+            <div className="flex gap-2">
+              <Input
+                id="adminEmail"
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="admin@example.com"
+                dir="ltr"
+                className="flex-1"
+              />
+              <Button type="submit" disabled={addAdminLoading || !adminEmail.trim()}>
+                {addAdminLoading ? t("common.loading") : t("superuser.addAdmin")}
+              </Button>
+            </div>
+          </form>
+          {lastInviteToken && (
+            <div className="flex gap-2 items-center">
+              <Input
+                value={`${window.location.origin}/onboarding/accept?token=${encodeURIComponent(lastInviteToken)}`}
+                readOnly
+                dir="ltr"
+                className="text-sm"
+              />
+              <Button variant="outline" size="sm" onClick={() => copyInviteLink(lastInviteToken)}>
+                {t("invites.copyLink")}
+              </Button>
             </div>
           )}
         </CardContent>

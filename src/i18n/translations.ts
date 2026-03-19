@@ -191,6 +191,14 @@ export const translations = {
   "superuser.activate": { he: "הפעל", en: "Activate" },
   "superuser.tenantActivated": { he: "הארגון הופעל", en: "Tenant activated" },
   "superuser.tenantDeactivated": { he: "הארגון הושבת", en: "Tenant deactivated" },
+  "superuser.adminEmails": { he: "דוא״ל מנהלים", en: "Admin emails" },
+  "superuser.adminEmailsPlaceholder": { he: "דוא״ל אחד או יותר (מופרדים בפסיק או שורה חדשה)", en: "One or more emails (comma or newline separated)" },
+  "superuser.adminInvites": { he: "הזמנות מנהלים", en: "Admin invites" },
+  "superuser.adminInvitesDesc": { he: "שתף את הקישורים עם המנהלים.", en: "Share these links with the admins." },
+  "superuser.tenantCreatedWithInvites": { he: "הארגון נוצר. שתף את קישורי ההזמנה.", en: "Tenant created. Share the invite links." },
+  "superuser.done": { he: "סיום", en: "Done" },
+  "superuser.addAdmin": { he: "הוסף מנהל", en: "Add admin" },
+  "superuser.addAdminDesc": { he: "צור הזמנה למנהל חדש בארגון זה.", en: "Create an invite for a new admin in this tenant." },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

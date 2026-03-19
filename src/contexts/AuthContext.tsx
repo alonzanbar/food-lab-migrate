@@ -36,7 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const hasSuperuser = roleList.some((r) => r.role === "superuser");
     setIsSuperuser(hasSuperuser);
 
-    const tenantRole = roleList.find((r) => r.role === "admin" || r.role === "worker");
+    // Prefer admin over worker when user has both (e.g. created by superuser then trigger added worker)
+    const tenantRole = roleList.find((r) => r.role === "admin") || roleList.find((r) => r.role === "worker");
     if (tenantRole) {
       setRole(tenantRole.role as "admin" | "worker" | "superuser");
     } else if (hasSuperuser) {

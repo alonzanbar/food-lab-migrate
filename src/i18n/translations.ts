@@ -161,6 +161,10 @@ export const translations = {
   "onboarding.signInToContinue": { he: "התחבר להמשך", en: "Sign in to continue" },
   "onboarding.missingInviteToken": { he: "חסר קוד הזמנה.", en: "Missing invite token." },
   "onboarding.backToOnboarding": { he: "חזרה להגדרה", en: "Back to setup" },
+  "onboarding.setPassword": { he: "הגדר סיסמה", en: "Set your password" },
+  "onboarding.setPasswordDesc": { he: "הזן סיסמה להצטרפות לארגון. אין צורך באימות דוא״ל.", en: "Enter a password to join. No email verification required." },
+  "onboarding.confirmPassword": { he: "אימות סיסמה", en: "Confirm password" },
+  "onboarding.passwordMismatch": { he: "הסיסמאות אינן תואמות.", en: "Passwords do not match." },
 
   // Invites (admin)
   "invites.title": { he: "הזמנת משתמשים", en: "Invite users" },

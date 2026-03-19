@@ -42,10 +42,15 @@ export default function FillForm() {
 
   useEffect(() => {
     const fetch = async () => {
+      if (!tenantId) {
+        navigate("/worker");
+        return;
+      }
       const { data } = await supabase
         .from("forms")
         .select("*")
         .eq("id", id)
+        .eq("tenant_id", tenantId)
         .eq("status", "active")
         .single();
       if (!data) {
@@ -62,7 +67,7 @@ export default function FillForm() {
       setLoading(false);
     };
     fetch();
-  }, [id]);
+  }, [id, tenantId, navigate]);
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

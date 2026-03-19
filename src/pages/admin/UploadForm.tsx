@@ -194,7 +194,8 @@ export default function UploadForm() {
           } as any,
           status: "draft",
         })
-        .eq("id", form.id);
+        .eq("id", form.id)
+        .eq("tenant_id", tenantId);
       if (updateError) throw updateError;
 
       toast.success(t("forms.uploadSuccess"));

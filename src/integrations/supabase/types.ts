@@ -63,6 +63,7 @@ export type Database = {
           extracted_schema: Json | null
           extraction_result: Json | null
           id: string
+          is_template: boolean
           name: string
           source_file_name: string | null
           source_file_url: string | null
@@ -76,6 +77,7 @@ export type Database = {
           extracted_schema?: Json | null
           extraction_result?: Json | null
           id?: string
+          is_template?: boolean
           name: string
           source_file_name?: string | null
           source_file_url?: string | null
@@ -89,6 +91,7 @@ export type Database = {
           extracted_schema?: Json | null
           extraction_result?: Json | null
           id?: string
+          is_template?: boolean
           name?: string
           source_file_name?: string | null
           source_file_url?: string | null

@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { FileText, BarChart3, LogOut, Globe } from "lucide-react";
+import { FileText, BarChart3, LogOut, Globe, Users } from "lucide-react";
 
 export default function AdminLayout() {
   const { signOut, user } = useAuth();
@@ -18,6 +18,7 @@ export default function AdminLayout() {
   const navItems = [
     { to: "/admin/forms", label: t("nav.forms"), icon: FileText },
     { to: "/admin/reports", label: t("nav.reports"), icon: BarChart3 },
+    { to: "/admin/invites", label: "Invites", icon: Users },
   ];
 
   return (

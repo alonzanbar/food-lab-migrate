@@ -42,11 +42,13 @@ export default function FormsList() {
   useEffect(() => { fetchForms(); }, [tenantId]);
 
   const toggleStatus = async (form: Form) => {
+    if (!tenantId) return;
     const newStatus = form.status === "active" ? "inactive" : "active";
     const { error } = await supabase
       .from("forms")
       .update({ status: newStatus })
-      .eq("id", form.id);
+      .eq("id", form.id)
+      .eq("tenant_id", tenantId);
     if (error) {
       toast.error(error.message);
     } else {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ interface Submission {
 
 export default function ReportResults() {
   const { id } = useParams<{ id: string }>();
+  const { tenantId } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
@@ -33,10 +35,15 @@ export default function ReportResults() {
 
   useEffect(() => {
     const fetchReport = async () => {
+      if (!tenantId) {
+        navigate("/admin/reports");
+        return;
+      }
       const { data: reportData } = await supabase
         .from("reports")
         .select("*, forms(name)")
         .eq("id", id)
+        .eq("tenant_id", tenantId)
         .single();
       if (!reportData) {
         navigate("/admin/reports");
@@ -48,6 +55,7 @@ export default function ReportResults() {
       let query = supabase
         .from("form_submissions")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("submitted_at", { ascending: false });
 
       if (reportData.form_id) query = query.eq("form_id", reportData.form_id);
@@ -74,7 +82,7 @@ export default function ReportResults() {
       setLoading(false);
     };
     fetchReport();
-  }, [id]);
+  }, [id, tenantId, navigate]);
 
   if (loading) return <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>;
   if (!report) return null;

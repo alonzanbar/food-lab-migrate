@@ -14,16 +14,19 @@ import FormReview from "./pages/admin/FormReview";
 import ReportsList from "./pages/admin/ReportsList";
 import CreateReport from "./pages/admin/CreateReport";
 import ReportResults from "./pages/admin/ReportResults";
+import InviteUsers from "./pages/admin/InviteUsers";
 import WorkerLayout from "./pages/worker/WorkerLayout";
 import WorkerForms from "./pages/worker/WorkerForms";
 import FillForm from "./pages/worker/FillForm";
 import SubmissionSuccess from "./pages/worker/SubmissionSuccess";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/onboarding/Onboarding";
+import AcceptInvite from "./pages/onboarding/AcceptInvite";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, role, loading } = useAuth();
+  const { user, role, tenantId, loading } = useAuth();
 
   if (loading) {
     return (
@@ -38,6 +41,16 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  if (!tenantId) {
+    return (
+      <Routes>
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding/accept" element={<AcceptInvite />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }
@@ -59,6 +72,7 @@ function AppRoutes() {
         <Route path="reports" element={<ReportsList />} />
         <Route path="reports/create" element={<CreateReport />} />
         <Route path="reports/:id" element={<ReportResults />} />
+        <Route path="invites" element={<InviteUsers />} />
       </Route>
 
       {/* Worker routes */}
@@ -67,6 +81,9 @@ function AppRoutes() {
         <Route path="forms/:id" element={<FillForm />} />
         <Route path="success" element={<SubmissionSuccess />} />
       </Route>
+
+      <Route path="/onboarding" element={<Navigate to={defaultPath} replace />} />
+      <Route path="/onboarding/accept" element={<Navigate to={defaultPath} replace />} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

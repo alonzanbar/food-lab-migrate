@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 
 export default function Login() {
+  const [params] = useSearchParams();
+  const redirectTo = params.get("redirect") || "/";
+  const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -28,6 +32,7 @@ export default function Login() {
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
+        navigate(redirectTo, { replace: true });
       }
     } catch (err: any) {
       toast.error(err.message || t("auth.loginError"));

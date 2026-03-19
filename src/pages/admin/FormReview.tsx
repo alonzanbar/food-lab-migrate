@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ const FIELD_TYPES = ["text", "number", "boolean", "date", "time", "select", "tex
 
 export default function FormReview() {
   const { id } = useParams<{ id: string }>();
+  const { tenantId } = useAuth();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormData | null>(null);
@@ -51,10 +53,15 @@ export default function FormReview() {
 
   useEffect(() => {
     const fetch = async () => {
+      if (!tenantId) {
+        navigate("/admin/forms");
+        return;
+      }
       const { data, error } = await supabase
         .from("forms")
         .select("*")
         .eq("id", id)
+        .eq("tenant_id", tenantId)
         .single();
       if (error) {
         toast.error(error.message);
@@ -66,7 +73,7 @@ export default function FormReview() {
       setLoading(false);
     };
     fetch();
-  }, [id]);
+  }, [id, tenantId, navigate]);
 
   const updateField = (index: number, updates: Partial<FormField>) => {
     setFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f));
@@ -93,12 +100,13 @@ export default function FormReview() {
   };
 
   const saveSchema = async () => {
-    if (!form) return;
+    if (!form || !tenantId) return;
     setSaving(true);
     const { error } = await supabase
       .from("forms")
       .update({ extracted_schema: { fields } as any })
-      .eq("id", form.id);
+      .eq("id", form.id)
+      .eq("tenant_id", tenantId);
     if (error) {
       toast.error(error.message);
     } else {
@@ -108,12 +116,13 @@ export default function FormReview() {
   };
 
   const toggleStatus = async () => {
-    if (!form) return;
+    if (!form || !tenantId) return;
     const newStatus = form.status === "active" ? "inactive" : "active";
     const { error } = await supabase
       .from("forms")
       .update({ status: newStatus })
-      .eq("id", form.id);
+      .eq("id", form.id)
+      .eq("tenant_id", tenantId);
     if (error) {
       toast.error(error.message);
     } else {

@@ -26,7 +26,8 @@ export default function CreateReport() {
       const { data } = await supabase
         .from("forms")
         .select("id, name")
-        .eq("tenant_id", tenantId);
+        .eq("tenant_id", tenantId)
+        .eq("is_template", false);
       setForms(data || []);
     };
     fetchForms();

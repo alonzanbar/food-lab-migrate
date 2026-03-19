@@ -22,8 +22,6 @@ export default function Login() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const isInviteFlow = redirectTo.includes("/onboarding/accept");
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

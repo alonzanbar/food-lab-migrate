@@ -8,7 +8,7 @@ function randomToken(bytes = 24) {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
 
   try {
     const { userId, supabaseAdmin } = await getAuthedContext(req);

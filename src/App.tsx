@@ -52,7 +52,7 @@ function AppRoutes() {
   if (!tenantId) {
     return (
       <Routes>
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding" element={isSuperuser ? <Navigate to="/superuser/tenants" replace /> : <Onboarding />} />
         <Route path="/onboarding/accept" element={<AcceptInvite />} />
         <Route path="/superuser" element={isSuperuser ? <SuperuserLayout /> : <Navigate to="/onboarding" replace />}>
           <Route index element={<Navigate to="/superuser/tenants" replace />} />

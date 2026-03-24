@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, ChevronLeft } from "lucide-react";
+import { FileText, ChevronLeft, GitBranch } from "lucide-react";
 
 interface Form {
   id: string;
@@ -38,6 +38,18 @@ export default function WorkerForms() {
   return (
     <div className="space-y-4 py-4">
       <h2 className="text-xl font-bold font-display">{t("worker.title")}</h2>
+
+      <button
+        type="button"
+        onClick={() => navigate("/worker/processes")}
+        className="w-full bg-accent/10 border border-accent/30 rounded-xl p-4 flex items-center justify-between text-start hover:bg-accent/15 transition-colors"
+      >
+        <span className="flex items-center gap-3">
+          <GitBranch className="w-5 h-5 text-accent shrink-0" />
+          <span className="font-semibold text-accent">{t("worker.productionProcesses")}</span>
+        </span>
+        <ChevronLeft className="w-5 h-5 text-accent rtl:rotate-180" />
+      </button>
 
       {forms.length === 0 ? (
         <div className="text-center py-12">

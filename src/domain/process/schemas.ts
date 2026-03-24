@@ -131,6 +131,20 @@ export const stepDefinitionSchema = z.object({
   updated_at: z.string(),
 });
 
+/** Global `step_definitions` seed rows (stable `id` matches SQL migration). */
+export const stepDefinitionSeedSchema = z.object({
+  id: z.string().uuid(),
+  code: z.string().min(1),
+  step_type: stepTypeSchema,
+  name_he: z.string(),
+  name_en: z.string(),
+  description: z.string().nullable(),
+  input_mode: inputModeSchema,
+  schema: z.union([stepSchemaJsonSchema, z.record(z.unknown())]),
+  supports_matrix: z.boolean(),
+  default_validation_behavior: z.record(z.unknown()).nullable(),
+});
+
 export const processDefinitionSchema = z.object({
   id: z.string().uuid(),
   tenant_id: z.string().uuid(),

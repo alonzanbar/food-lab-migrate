@@ -1,0 +1,1 @@
+SELECT public.bootstrap_superuser('atzanbar@gmail.com');

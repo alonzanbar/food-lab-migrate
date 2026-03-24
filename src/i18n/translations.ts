@@ -117,6 +117,19 @@ export const translations = {
   "worker.addPhoto": { he: "הוסף תמונה", en: "Gallery" },
   "worker.takePhoto": { he: "צלם תמונה", en: "Camera" },
   "worker.noImagesAttached": { he: "לא צורפו תמונות", en: "No photos attached" },
+  "worker.productionProcesses": { he: "תהליכי ייצור", en: "Production processes" },
+
+  // Process engine (worker)
+  "process.listTitle": { he: "תהליכי ייצור", en: "Production processes" },
+  "process.noProcesses": { he: "אין תהליכים זמינים", en: "No processes available" },
+  "process.backToForms": { he: "חזרה לטפסים", en: "Back to forms" },
+  "process.startNewRun": { he: "התחל ריצה חדשה", en: "Start new run" },
+  "process.runStarted": { he: "הריצה נוצרה", en: "Run created" },
+  "process.previousRuns": { he: "ריצות קודמות", en: "Previous runs" },
+  "process.noRuns": { he: "אין ריצות עדיין", en: "No runs yet" },
+  "process.runSteps": { he: "שלבי הריצה", en: "Run steps" },
+  "process.stepSaved": { he: "השלב נשמר", en: "Step saved" },
+  "process.addRow": { he: "הוסף שורה", en: "Add row" },
 
   // Reports
   "reports.title": { he: "דוחות", en: "Reports" },

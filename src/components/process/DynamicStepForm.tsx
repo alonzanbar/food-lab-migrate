@@ -49,6 +49,60 @@ function emptyRow(cols: FieldDef[], rowNumber1Based: number) {
   return r;
 }
 
+function flatFieldsForSchema(schema: Schema): FieldDef[] {
+  if (schema.input_mode === "matrix") return schema.columns;
+  if (schema.input_mode === "system") return schema.fields ?? [];
+  return schema.fields;
+}
+
+function htmlInputType(fieldType: string): React.HTMLInputTypeAttribute {
+  if (
+    fieldType === "integer" ||
+    fieldType === "number" ||
+    fieldType === "temperature" ||
+    fieldType === "pressure"
+  ) {
+    return "number";
+  }
+  if (fieldType === "date") return "date";
+  if (fieldType === "time") return "time";
+  if (fieldType === "datetime") return "datetime-local";
+  return "text";
+}
+
+function SelectFromOptions(props: {
+  id?: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  triggerClassName?: string;
+}) {
+  const { id, value, onChange, options, triggerClassName } = props;
+  return (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger id={id} className={triggerClassName}>
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt} value={opt}>
+            {opt}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function InstructionsBanner({ text }: { text: string }) {
+  return (
+    <Alert>
+      <Info className="h-4 w-4" />
+      <AlertDescription>{text}</AlertDescription>
+    </Alert>
+  );
+}
+
 /** Single-form payload: flat key -> value. Matrix: { rows: Record[] } */
 export function DynamicStepForm(props: {
   schema: Schema;
@@ -94,12 +148,11 @@ export function DynamicStepForm(props: {
         const row: Record<string, string> = {};
         for (const c of cols) {
           const v = r[c.key];
-          row[c.key] = v === undefined || v === null ? "" : String(v);
-        }
-        for (const c of cols) {
-          if (c.validation?.auto_row_index && !row[c.key]?.trim()) {
-            row[c.key] = String(i + 1);
+          let cell = v === undefined || v === null ? "" : String(v);
+          if (c.validation?.auto_row_index && !cell.trim()) {
+            cell = String(i + 1);
           }
+          row[c.key] = cell;
         }
         return row;
       });
@@ -110,8 +163,13 @@ export function DynamicStepForm(props: {
   const [pendingImages, setPendingImages] = useState<Record<string, File | null>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const fields =
-    schema.input_mode === "matrix" ? schema.columns : schema.input_mode === "system" ? schema.fields || [] : schema.fields;
+  const fields = flatFieldsForSchema(schema);
+
+  function pickImageFile(fieldKey: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setPendingImages((p) => ({ ...p, [fieldKey]: file ?? null }));
+    e.target.value = "";
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -172,7 +230,6 @@ export function DynamicStepForm(props: {
     return raw;
   }
 
-  /** Matrix cell control (select, number, text, etc.) — keeps parity with single-form `select` behavior. */
   function renderMatrixCellControl(
     c: FieldDef,
     value: string,
@@ -197,36 +254,20 @@ export function DynamicStepForm(props: {
 
     if (c.field_type === "select" && c.options?.length) {
       return (
-        <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger id={id} className="w-full min-w-[8rem]">
-            <SelectValue placeholder="—" />
-          </SelectTrigger>
-          <SelectContent>
-            {c.options.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SelectFromOptions
+          id={id}
+          value={value}
+          onChange={onChange}
+          options={c.options}
+          triggerClassName="w-full min-w-[8rem]"
+        />
       );
     }
-
-    const type =
-      c.field_type === "integer" || c.field_type === "number" || c.field_type === "temperature" || c.field_type === "pressure"
-        ? "number"
-        : c.field_type === "date"
-          ? "date"
-          : c.field_type === "time"
-            ? "time"
-            : c.field_type === "datetime"
-              ? "datetime-local"
-              : "text";
 
     return (
       <Input
         id={id}
-        type={type}
+        type={htmlInputType(c.field_type)}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="min-w-0"
@@ -254,11 +295,7 @@ export function DynamicStepForm(props: {
               accept="image/*"
               capture="environment"
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                setPendingImages((p) => ({ ...p, [f.key]: file ?? null }));
-                e.target.value = "";
-              }}
+              onChange={(e) => pickImageFile(f.key, e)}
             />
             <Button type="button" variant="outline" size="sm" className="gap-1" asChild>
               <label htmlFor={`${id}-cam`} className="cursor-pointer">
@@ -271,11 +308,7 @@ export function DynamicStepForm(props: {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                setPendingImages((p) => ({ ...p, [f.key]: file ?? null }));
-                e.target.value = "";
-              }}
+              onChange={(e) => pickImageFile(f.key, e)}
             />
             <Button type="button" variant="outline" size="sm" className="gap-1" asChild>
               <label htmlFor={`${id}-gal`} className="cursor-pointer">
@@ -329,32 +362,10 @@ export function DynamicStepForm(props: {
             {lab}
             {f.required ? " *" : ""}
           </Label>
-          <Select value={value || undefined} onValueChange={onChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="—" />
-            </SelectTrigger>
-            <SelectContent>
-              {f.options.map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {opt}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SelectFromOptions id={id} value={value} onChange={onChange} options={f.options} />
         </div>
       );
     }
-
-    const type =
-      f.field_type === "integer" || f.field_type === "number" || f.field_type === "temperature" || f.field_type === "pressure"
-        ? "number"
-        : f.field_type === "date"
-          ? "date"
-          : f.field_type === "time"
-            ? "time"
-            : f.field_type === "datetime"
-              ? "datetime-local"
-              : "text";
 
     return (
       <div key={f.key} className="space-y-2">
@@ -363,20 +374,21 @@ export function DynamicStepForm(props: {
           {f.unit ? ` (${f.unit})` : ""}
           {f.required ? " *" : ""}
         </Label>
-        <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} />
+        <Input id={id} type={htmlInputType(f.field_type)} value={value} onChange={(e) => onChange(e.target.value)} />
       </div>
     );
   }
 
+  const submitButton = (
+    <Button type="submit" className="w-full h-12" disabled={props.disabled || submitting}>
+      {submitting ? t("common.loading") : props.submitLabel}
+    </Button>
+  );
+
   if (schema.input_mode === "matrix") {
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
-        {instructions && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>{instructions}</AlertDescription>
-          </Alert>
-        )}
+        {instructions ? <InstructionsBanner text={instructions} /> : null}
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full text-sm">
             <thead>
@@ -418,27 +430,18 @@ export function DynamicStepForm(props: {
         >
           {t("process.addRow")}
         </Button>
-        <Button type="submit" className="w-full" disabled={props.disabled || submitting}>
-          {submitting ? t("common.loading") : props.submitLabel}
-        </Button>
+        {submitButton}
       </form>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {instructions && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>{instructions}</AlertDescription>
-        </Alert>
-      )}
+      {instructions ? <InstructionsBanner text={instructions} /> : null}
       {fields.map((f) =>
         renderField(f, single[f.key] || "", (v) => setSingle((s) => ({ ...s, [f.key]: v }))),
       )}
-      <Button type="submit" className="w-full h-12" disabled={props.disabled || submitting}>
-        {submitting ? t("common.loading") : props.submitLabel}
-      </Button>
+      {submitButton}
     </form>
   );
 }

@@ -130,6 +130,8 @@ export const translations = {
   "process.runSteps": { he: "שלבי הריצה", en: "Run steps" },
   "process.stepSaved": { he: "השלב נשמר", en: "Step saved" },
   "process.addRow": { he: "הוסף שורה", en: "Add row" },
+  "process.approved": { he: "מאושר", en: "Approved" },
+  "process.notApproved": { he: "לא מאושר", en: "Not approved" },
 
   // Reports
   "reports.title": { he: "דוחות", en: "Reports" },

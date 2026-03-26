@@ -333,21 +333,6 @@ const ccp1Ccp2VerificationDoc: StepDefinitionSeed = {
         unit: "°C",
       },
       {
-        key: "graph_verification",
-        label_he: "אימות גרף",
-        label_en: "Graph verification",
-        field_type: "select",
-        required: false,
-        options: ["Approved", "Not approved"],
-      },
-      {
-        key: "graph_image",
-        label_he: "צילום גרף",
-        label_en: "Graph photo",
-        field_type: "image",
-        required: false,
-      },
-      {
         key: "verifier_sig",
         label_he: "שם וחתימת המאמת",
         label_en: "Verifier name and signature",
@@ -631,12 +616,19 @@ const labGraphVerificationDoc: StepDefinitionSeed = {
     input_mode: "single_form",
     fields: [
       {
-        key: "graph_attached_status",
-        label_he: "גרף פיסטור מצורף: תקין / לא תקין",
-        label_en: "Attached pasteurization graph: OK / not OK",
+        key: "graph_verification",
+        label_he: "אימות גרף",
+        label_en: "Graph verification",
         field_type: "select",
         required: false,
-        options: ["תקין", "לא תקין"],
+        options: ["Approved", "Not approved"],
+      },
+      {
+        key: "graph_image",
+        label_he: "צילום גרף",
+        label_en: "Graph photo",
+        field_type: "image",
+        required: false,
       },
       {
         key: "lab_manager_sig",

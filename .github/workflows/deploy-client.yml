@@ -29,6 +29,16 @@ jobs:
           cache: "npm"
 
       - run: npm install
+
+      - name: Step catalog in sync with migrations
+        run: |
+          npm run generate:step-definitions-migration
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Step catalog is out of sync with committed migrations."
+            git status
+            exit 1
+          fi
+
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

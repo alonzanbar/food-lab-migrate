@@ -35,6 +35,7 @@ export const fieldTypeSchema = z.enum([
   "temperature",
   "pressure",
   "graph_ref",
+  "image",
 ]);
 
 export const fieldDefSchema: z.ZodType<import("./types").FieldDef> = z.object({

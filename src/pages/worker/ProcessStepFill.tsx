@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { DynamicStepForm } from "@/components/process/DynamicStepForm";
+import { DynamicStepForm, type StepFormSubmitMeta } from "@/components/process/DynamicStepForm";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -76,12 +76,29 @@ export default function ProcessStepFill() {
     })();
   }, [stepRunId, tenantId, lang, t]);
 
-  async function handleSave(payload: Record<string, unknown>) {
+  async function handleSave(payload: Record<string, unknown>, meta?: StepFormSubmitMeta) {
     if (!stepRunId || !tenantId) return;
+    const finalPayload = { ...payload };
+
+    if (meta?.imageFiles) {
+      for (const [key, file] of Object.entries(meta.imageFiles)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${tenantId}/process-steps/${stepRunId}/${key}_${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("submission-images").upload(path, file);
+        if (upErr) {
+          console.error(upErr);
+          toast.error(t("common.error"));
+          return;
+        }
+        const { data: urlData } = supabase.storage.from("submission-images").getPublicUrl(path);
+        finalPayload[key] = urlData.publicUrl;
+      }
+    }
+
     const { error } = await (supabase as any)
       .from("process_step_runs")
       .update({
-        captured_data: payload,
+        captured_data: finalPayload,
         status: "completed",
         completed_at: new Date().toISOString(),
       })

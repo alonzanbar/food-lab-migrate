@@ -201,7 +201,8 @@ export type FieldType =
   | "textarea"
   | "temperature"
   | "pressure"
-  | "graph_ref";
+  | "graph_ref"
+  | "image";
 
 /**
  * JSON in `process_steps.parameterization` — operational rules for this step instance.

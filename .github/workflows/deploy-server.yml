@@ -15,6 +15,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Step catalog in sync with migrations
+        run: |
+          npm run generate:step-definitions-migration
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Step catalog is out of sync with committed migrations."
+            git status
+            exit 1
+          fi
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest

@@ -126,7 +126,7 @@ const breakingAdditives: StepDefinitionSeed = {
         label_en: "Additive",
         field_type: "select",
         required: true,
-        options: ["מלח", "חומצה", "תרבית", "אחר"],
+        options: ["Salt", "Sugar", "Xanthan (קסנטן)"],
       },
       {
         key: "amount",

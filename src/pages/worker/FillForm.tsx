@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translateSelectOptionLabel } from "@/i18n/processSelectOptions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,7 +225,9 @@ export default function FillForm() {
           >
             <option value="">--</option>
             {field.options?.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt} value={opt}>
+                {translateSelectOptionLabel(opt, t)}
+              </option>
             ))}
           </select>
         );

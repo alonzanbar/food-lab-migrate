@@ -1,5 +1,22 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useLayoutEffect } from "react";
 import { Language, TranslationKey, t as translate } from "@/i18n/translations";
+
+const LANG_STORAGE_KEY = "ffd.lang.v1";
+
+function readStoredLanguage(): Language {
+  try {
+    const raw = localStorage.getItem(LANG_STORAGE_KEY);
+    if (raw === "he" || raw === "en") return raw;
+  } catch {
+    /* private mode / unavailable */
+  }
+  return "he";
+}
+
+function applyDocumentLanguage(next: Language) {
+  document.documentElement.lang = next;
+  document.documentElement.dir = next === "he" ? "rtl" : "ltr";
+}
 
 interface LanguageContextType {
   lang: Language;
@@ -10,12 +27,19 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Language>("en");
+  const [lang, setLangState] = useState<Language>(() => readStoredLanguage());
+
+  useLayoutEffect(() => {
+    applyDocumentLanguage(lang);
+  }, [lang]);
 
   const setLang = useCallback((newLang: Language) => {
     setLangState(newLang);
-    document.documentElement.lang = newLang;
-    document.documentElement.dir = newLang === "he" ? "rtl" : "ltr";
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, newLang);
+    } catch {
+      /* quota / private mode */
+    }
   }, []);
 
   const t = useCallback((key: TranslationKey) => translate(key, lang), [lang]);

@@ -22,6 +22,7 @@ import SubmissionSuccess from "./pages/worker/SubmissionSuccess";
 import WorkerProcessList from "./pages/worker/WorkerProcessList";
 import ProcessRuns from "./pages/worker/ProcessRuns";
 import ProcessRunDetail from "./pages/worker/ProcessRunDetail";
+import ProcessPhaseSteps from "./pages/worker/ProcessPhaseSteps";
 import ProcessStepFill from "./pages/worker/ProcessStepFill";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/onboarding/Onboarding";
@@ -97,8 +98,9 @@ function AppRoutes() {
         <Route path="success" element={<SubmissionSuccess />} />
         <Route path="processes" element={<WorkerProcessList />} />
         <Route path="processes/:processDefinitionId" element={<ProcessRuns />} />
+        <Route path="processes/:processDefinitionId/runs/:runId/phases/:phaseId/fill/:stepRunId" element={<ProcessStepFill />} />
+        <Route path="processes/:processDefinitionId/runs/:runId/phases/:phaseId" element={<ProcessPhaseSteps />} />
         <Route path="processes/:processDefinitionId/runs/:runId" element={<ProcessRunDetail />} />
-        <Route path="processes/:processDefinitionId/runs/:runId/fill/:stepRunId" element={<ProcessStepFill />} />
       </Route>
 
       <Route path="/onboarding" element={<Navigate to={defaultPath} replace />} />

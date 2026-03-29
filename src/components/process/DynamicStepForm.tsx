@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import type { TranslationKey } from "@/i18n/translations";
+import { translateSelectOptionLabel } from "@/i18n/processSelectOptions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,17 +41,6 @@ function labelFor(f: FieldDef, lang: string) {
   return lang === "he" ? f.label_he : f.label_en;
 }
 
-/** Stored option values stay stable (e.g. English); labels follow UI language. */
-const SELECT_OPTION_I18N: Partial<Record<string, TranslationKey>> = {
-  Approved: "process.approved",
-  "Not approved": "process.notApproved",
-};
-
-function selectOptionLabel(opt: string, translate: (key: TranslationKey) => string): string {
-  const key = SELECT_OPTION_I18N[opt];
-  return key ? translate(key) : opt;
-}
-
 function emptyRow(cols: FieldDef[], rowNumber1Based: number) {
   const r: Record<string, string> = {};
   for (const c of cols) {
@@ -90,16 +79,16 @@ function SelectFromOptions(props: {
   triggerClassName?: string;
 }) {
   const { id, value, onChange, options, triggerClassName } = props;
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   return (
-    <Select value={value || undefined} onValueChange={onChange}>
+    <Select key={`${id ?? "step-select"}-${lang}`} value={value || undefined} onValueChange={onChange}>
       <SelectTrigger id={id} className={triggerClassName}>
         <SelectValue placeholder="—" />
       </SelectTrigger>
       <SelectContent>
         {options.map((opt) => (
           <SelectItem key={opt} value={opt}>
-            {selectOptionLabel(opt, t)}
+            {translateSelectOptionLabel(opt, t)}
           </SelectItem>
         ))}
       </SelectContent>

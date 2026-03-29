@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,15 +7,48 @@ import { DynamicStepForm, type StepFormSubmitMeta } from "@/components/process/D
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
+
+type ProcessStepRunsSelectClient = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        eq: (column: string, value: string) => {
+          maybeSingle: () => Promise<{ data: unknown; error: { message?: string } | null }>;
+        };
+      };
+    };
+  };
+};
+
+type ProcessStepRunsUpdateClient = {
+  from: (table: string) => {
+    update: (patch: Record<string, unknown>) => {
+      eq: (column: string, value: string) => {
+        eq: (column: string, value: string) => Promise<{ error: { message?: string } | null }>;
+      };
+    };
+  };
+};
+
 export default function ProcessStepFill() {
-  const { processDefinitionId, runId, stepRunId } = useParams<{
+  const { processDefinitionId, runId, phaseId, stepRunId } = useParams<{
     processDefinitionId: string;
     runId: string;
+    phaseId: string;
     stepRunId: string;
   }>();
   const { tenantId } = useAuth();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
+
+  const stepsListPath = useMemo(
+    () =>
+      phaseId
+        ? `/worker/processes/${processDefinitionId}/runs/${runId}/phases/${encodeURIComponent(phaseId)}`
+        : `/worker/processes/${processDefinitionId}/runs/${runId}`,
+    [processDefinitionId, runId, phaseId],
+  );
+
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<Record<string, unknown> | null>(null);
   const [parameterization, setParameterization] = useState<Record<string, unknown> | null>(null);
@@ -26,7 +59,7 @@ export default function ProcessStepFill() {
   useEffect(() => {
     (async () => {
       if (!stepRunId || !tenantId) return;
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown as ProcessStepRunsSelectClient)
         .from("process_step_runs")
         .select(
           `
@@ -95,7 +128,7 @@ export default function ProcessStepFill() {
       }
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as unknown as ProcessStepRunsUpdateClient)
       .from("process_step_runs")
       .update({
         captured_data: finalPayload,
@@ -110,7 +143,7 @@ export default function ProcessStepFill() {
       return;
     }
     toast.success(t("process.stepSaved"));
-    navigate(`/worker/processes/${processDefinitionId}/runs/${runId}`);
+    navigate(stepsListPath);
   }
 
   if (loading || !schema) {
@@ -129,7 +162,7 @@ export default function ProcessStepFill() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => navigate(`/worker/processes/${processDefinitionId}/runs/${runId}`)}
+          onClick={() => navigate(stepsListPath)}
           className="p-2 -ms-2 text-muted-foreground"
         >
           <ChevronLeft className="w-6 h-6" />

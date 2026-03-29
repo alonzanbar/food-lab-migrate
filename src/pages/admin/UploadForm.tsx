@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
+import { viteSupabaseProjectOrigin } from "@/integrations/supabase/projectUrl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,16 +114,14 @@ export default function UploadForm() {
           }
         : { tokenLen: 0, dotParts: 0, hasWhitespace: false, hasQuotes: false };
 
+      const apiOrigin = viteSupabaseProjectOrigin();
       console.log("[UploadForm] Edge function auth metadata", {
         hasAccessToken: !!normalizedAccessToken,
         hasSession: !!session,
         jwtIss: jwtMeta?.iss ?? null,
         jwtExp: jwtMeta?.exp ?? null,
         tokenMeta,
-        expectedIss:
-          import.meta.env.VITE_SUPABASE_URL
-            ? `${import.meta.env.VITE_SUPABASE_URL}/auth/v1`
-            : null,
+        expectedIss: apiOrigin ? `${apiOrigin}/auth/v1` : null,
       });
 
       // #region debug: edge function auth injection (no secrets)

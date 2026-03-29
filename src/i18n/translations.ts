@@ -128,6 +128,11 @@ export const translations = {
   "process.previousRuns": { he: "ריצות קודמות", en: "Previous runs" },
   "process.noRuns": { he: "אין ריצות עדיין", en: "No runs yet" },
   "process.runSteps": { he: "שלבי הריצה", en: "Run steps" },
+  "process.runPhases": { he: "מקטעי הריצה", en: "Run phases" },
+  "process.phaseStepsSubtitle": { he: "בחרו שלב למילוי", en: "Choose a step to complete" },
+  "process.phaseNotFound": { he: "המקטע לא נמצא בריצה זו", en: "This phase was not found on this run" },
+
+  "process.phaseToggleAria": { he: "הצג או הסתר שלבים בשלב זה", en: "Show or hide steps in this phase" },
   "process.stepSaved": { he: "השלב נשמר", en: "Step saved" },
   "process.addRow": { he: "הוסף שורה", en: "Add row" },
   "process.approved": { he: "מאושר", en: "Approved" },

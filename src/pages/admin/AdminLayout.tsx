@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { FileText, BarChart3, LogOut, Globe, Users, Building2 } from "lucide-react";
+import { GitBranch, BarChart3, LogOut, Globe, Users, Building2 } from "lucide-react";
 
 export default function AdminLayout() {
   const { signOut, user, isSuperuser } = useAuth();
@@ -16,7 +16,7 @@ export default function AdminLayout() {
   };
 
   const navItems = [
-    { to: "/admin/forms", label: t("nav.forms"), icon: FileText },
+    { to: "/admin/processes", label: t("nav.processes"), icon: GitBranch },
     { to: "/admin/reports", label: t("nav.reports"), icon: BarChart3 },
     { to: "/admin/invites", label: "Invites", icon: Users },
     ...(isSuperuser ? [{ to: "/superuser/tenants", label: t("superuser.tenants"), icon: Building2 }] : []),

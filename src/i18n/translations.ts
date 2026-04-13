@@ -50,6 +50,34 @@ export const translations = {
   "nav.reports": { he: "דוחות", en: "Reports" },
   "nav.admin": { he: "ניהול", en: "Admin" },
   "nav.worker": { he: "עובד", en: "Worker" },
+  "nav.processes": { he: "תהליכים", en: "Processes" },
+  "admin.tenantProcessesTitle": { he: "תהליכי ייצור לפי ארגון", en: "Tenant production processes" },
+  "admin.processesViewOnlyHint": {
+    he: "תצוגה בלבד. התחלת ריצות ומילוי שלבים מתבצעים באזור העובד.",
+    en: "View only. Starting runs and filling steps is done in the worker area.",
+  },
+  "admin.processCode": { he: "קוד", en: "Code" },
+  "admin.processVersion": { he: "גרסה", en: "Version" },
+  "admin.processStatusPublished": { he: "מפורסם", en: "Published" },
+  "admin.processStatusDraft": { he: "טיוטה", en: "Draft" },
+  "admin.processStatusArchived": { he: "בארכיון", en: "Archived" },
+  "admin.processOutlineReadOnlyHint": {
+    he: "תצוגת מבנה בלבד — שלבים לפי סדר ביצוע. אין אפשרות להתחיל ריצה או למלא טפסים מכאן.",
+    en: "Structure only — steps in execution order. Runs and data entry are not available here.",
+  },
+  "admin.processOutlineUnavailable": {
+    he: "התהליך לא נמצא או שאין הרשאה לצפות בו.",
+    en: "This process was not found or you do not have access.",
+  },
+  "admin.processOutlineEmpty": {
+    he: "אין שלבים מוגדרים לתהליך זה.",
+    en: "No phases or steps are defined for this process.",
+  },
+  "admin.processOutlineStepsError": {
+    he: "לא ניתן לטעון את רשימת השלבים. נסו שוב מאוחר יותר.",
+    en: "Could not load steps. Please try again later.",
+  },
+  "admin.processFinalStepBadge": { he: "שלב סיום", en: "Final step" },
 
   // Forms
   "forms.title": { he: "טפסים", en: "Forms" },
@@ -134,6 +162,12 @@ export const translations = {
 
   "process.phaseToggleAria": { he: "הצג או הסתר שלבים בשלב זה", en: "Show or hide steps in this phase" },
   "process.stepSaved": { he: "השלב נשמר", en: "Step saved" },
+  "process.finalStepNotice": {
+    he: "זהו שלב הסיום. שמירה תסגור את הריצה.",
+    en: "This is the final step. Saving will close the run.",
+  },
+  "process.submitFinalStep": { he: "שמור וסיים ריצה", en: "Save and complete run" },
+  "process.runCompletedToast": { he: "הריצה הושלמה", en: "Run completed" },
   "process.addRow": { he: "הוסף שורה", en: "Add row" },
   "process.approved": { he: "מאושר", en: "Approved" },
   "process.notApproved": { he: "לא מאושר", en: "Not approved" },

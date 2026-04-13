@@ -26,6 +26,7 @@ export async function fetchProcessStepsOrdered(
         `
         id,
         order_index,
+        is_final_step,
         parameterization,
         ui_config,
         step_definitions (

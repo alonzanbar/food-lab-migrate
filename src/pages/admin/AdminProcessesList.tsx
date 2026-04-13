@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { TranslationKey } from "@/i18n/translations";
 import { ProcessDefinitionCard } from "@/components/process";
-import { ChevronLeft, FileText } from "lucide-react";
 
 type ProcessDef = {
   id: string;
@@ -19,18 +19,29 @@ type ProcessDefinitionsClient = {
   from: (table: string) => {
     select: (columns: string) => {
       eq: (column: string, value: string) => {
-        eq: (column: string, value: string) => {
-          order: (column: string, opts?: { ascending?: boolean }) => Promise<{
-            data: unknown;
-            error: { message?: string } | null;
-          }>;
-        };
+        order: (column: string, opts?: { ascending?: boolean }) => Promise<{
+          data: unknown;
+          error: { message?: string } | null;
+        }>;
       };
     };
   };
 };
 
-export default function WorkerProcessList() {
+function statusLabel(status: string, t: (key: TranslationKey) => string) {
+  switch (status) {
+    case "published":
+      return t("admin.processStatusPublished");
+    case "draft":
+      return t("admin.processStatusDraft");
+    case "archived":
+      return t("admin.processStatusArchived");
+    default:
+      return status;
+  }
+}
+
+export default function AdminProcessesList() {
   const { tenantId } = useAuth();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
@@ -44,9 +55,14 @@ export default function WorkerProcessList() {
         .from("process_definitions")
         .select("id, code, name_he, name_en, version, status")
         .eq("tenant_id", tenantId)
-        .eq("status", "published")
         .order("name_he", { ascending: true });
-      if (!error && data) setItems(data as ProcessDef[]);
+
+      if (error) {
+        console.error(error);
+        setItems([]);
+      } else {
+        setItems((data as ProcessDef[]) || []);
+      }
       setLoading(false);
     })();
   }, [tenantId]);
@@ -57,16 +73,9 @@ export default function WorkerProcessList() {
 
   return (
     <div className="space-y-4 py-4">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => navigate("/worker")}
-          className="p-2 -ms-2 text-muted-foreground"
-          aria-label={t("common.back")}
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <h2 className="text-xl font-bold font-display">{t("process.listTitle")}</h2>
+      <div>
+        <h2 className="text-2xl font-bold font-display">{t("admin.tenantProcessesTitle")}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{t("admin.processesViewOnlyHint")}</p>
       </div>
 
       {items.length === 0 ? (
@@ -77,21 +86,12 @@ export default function WorkerProcessList() {
             <ProcessDefinitionCard
               key={p.id}
               title={lang === "he" ? p.name_he : p.name_en}
-              subtitle={`${p.code} · v${p.version}`}
-              onClick={() => navigate(`/worker/processes/${p.id}`)}
+              subtitle={`${p.code} · v${p.version} · ${statusLabel(p.status, t)}`}
+              onClick={() => navigate(`/admin/processes/${p.id}`)}
             />
           ))}
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={() => navigate("/worker")}
-        className="w-full flex items-center justify-center gap-2 py-3 text-muted-foreground border border-dashed rounded-xl"
-      >
-        <FileText className="w-5 h-5" />
-        {t("process.backToForms")}
-      </button>
     </div>
   );
 }

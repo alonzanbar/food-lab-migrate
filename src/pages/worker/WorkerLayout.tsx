@@ -35,7 +35,7 @@ export default function WorkerLayout() {
           )}
           {role === "admin" && (
             <button
-              onClick={() => navigate("/admin/forms")}
+              onClick={() => navigate("/admin/processes")}
               className="p-2 text-accent hover:text-foreground"
               title={t("nav.admin")}
             >

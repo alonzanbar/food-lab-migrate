@@ -50,7 +50,7 @@ export default function SuperuserLayout() {
           <Button
             variant="ghost"
             className="w-full justify-start gap-2"
-            onClick={() => navigate(tenantId ? (role === "admin" ? "/admin/forms" : "/worker") : "/onboarding")}
+            onClick={() => navigate(tenantId ? (role === "admin" ? "/admin/processes" : "/worker") : "/onboarding")}
           >
             <ArrowLeft className="w-4 h-4" />
             {t("superuser.backToApp")}

@@ -39,12 +39,18 @@ type ProcessTablesQueryClient = {
   };
 };
 
+export function phaseIdForStepRunRow(r: StepRunRow): string {
+  const ps = r.process_steps;
+  const ph = ps?.process_phases;
+  return ph?.id ?? ps?.process_phase_id ?? `orphan-${r.id}`;
+}
+
 export function buildPhaseGroups(rows: StepRunRow[]): PhaseGroup[] {
   const map = new Map<string, PhaseGroup>();
   for (const r of rows) {
+    const phaseId = phaseIdForStepRunRow(r);
     const ps = r.process_steps;
     const ph = ps?.process_phases;
-    const phaseId = ph?.id ?? ps?.process_phase_id ?? `orphan-${r.id}`;
     const order_index = ph?.order_index ?? 999;
     const name_he = ph?.name_he ?? "—";
     const name_en = ph?.name_en ?? "—";

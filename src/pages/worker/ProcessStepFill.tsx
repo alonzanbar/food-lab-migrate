@@ -6,7 +6,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { DynamicStepForm, type StepFormSubmitMeta } from "@/components/process/DynamicStepForm";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
+import {
+  writeLastOpenedStep,
+  clearLastOpenedStep,
+} from "@/lib/lastOpenedProcessStep";
 
+function phaseIdFromProcessSteps(
+  stepRunRowId: string,
+  ps: {
+    process_phase_id: string;
+    process_phases: { id: string } | null;
+  } | null,
+): string {
+  return ps?.process_phases?.id ?? ps?.process_phase_id ?? `orphan-${stepRunRowId}`;
+}
 
 type ProcessStepRunsSelectClient = {
   from: (table: string) => {
@@ -55,6 +68,7 @@ export default function ProcessStepFill() {
   const [title, setTitle] = useState("");
   const [initial, setInitial] = useState<Record<string, unknown>>({});
   const [inputMode, setInputMode] = useState<string>("single_form");
+  const [isFinalStep, setIsFinalStep] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -67,6 +81,9 @@ export default function ProcessStepFill() {
           status,
           captured_data,
           process_steps (
+            is_final_step,
+            process_phase_id,
+            process_phases ( id ),
             parameterization,
             step_definitions ( name_he, name_en, input_mode, schema )
           )
@@ -83,6 +100,9 @@ export default function ProcessStepFill() {
       }
 
       const ps = data.process_steps as {
+        is_final_step?: boolean;
+        process_phase_id: string;
+        process_phases: { id: string } | null;
         parameterization: Record<string, unknown> | null;
         step_definitions: {
           name_he: string;
@@ -99,18 +119,31 @@ export default function ProcessStepFill() {
         return;
       }
 
+      setIsFinalStep(!!ps?.is_final_step);
       setSchema(sd.schema as Record<string, unknown>);
       setInputMode(sd.input_mode || "single_form");
       setParameterization(ps?.parameterization || null);
       setTitle(lang === "he" ? sd.name_he : sd.name_en);
       const cap = (data.captured_data as Record<string, unknown>) || {};
       setInitial(cap);
+
+      const rowStatus = (data as { status?: string }).status;
+      if (rowStatus === "completed") {
+        clearLastOpenedStep(tenantId, runId);
+      } else if (processDefinitionId && runId && stepRunId) {
+        writeLastOpenedStep(tenantId, runId, {
+          processDefinitionId,
+          phaseId: phaseIdFromProcessSteps(stepRunId, ps),
+          stepRunId,
+        });
+      }
+
       setLoading(false);
     })();
-  }, [stepRunId, tenantId, lang, t]);
+  }, [stepRunId, tenantId, lang, t, processDefinitionId, runId]);
 
   async function handleSave(payload: Record<string, unknown>, meta?: StepFormSubmitMeta) {
-    if (!stepRunId || !tenantId) return;
+    if (!stepRunId || !tenantId || !runId) return;
     const finalPayload = { ...payload };
 
     if (meta?.imageFiles) {
@@ -142,7 +175,14 @@ export default function ProcessStepFill() {
       toast.error(t("common.error"));
       return;
     }
-    toast.success(t("process.stepSaved"));
+
+    if (isFinalStep) {
+      toast.success(t("process.runCompletedToast"));
+    } else {
+      toast.success(t("process.stepSaved"));
+    }
+
+    clearLastOpenedStep(tenantId, runId);
     navigate(stepsListPath);
   }
 
@@ -175,7 +215,8 @@ export default function ProcessStepFill() {
         parameterization={parameterization}
         initialData={initial}
         onSubmit={handleSave}
-        submitLabel={t("common.save")}
+        submitLabel={isFinalStep ? t("process.submitFinalStep") : t("common.save")}
+        noticeBanner={isFinalStep ? t("process.finalStepNotice") : null}
       />
     </div>
   );

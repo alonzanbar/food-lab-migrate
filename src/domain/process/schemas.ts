@@ -181,6 +181,7 @@ export const processStepSchema = z.object({
   required: z.boolean(),
   repeatable: z.boolean(),
   skippable: z.boolean(),
+  is_final_step: z.boolean(),
   created_at: z.string(),
   updated_at: z.string(),
 });

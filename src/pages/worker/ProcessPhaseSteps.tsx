@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProcessRunStepRuns, type StepRunRow } from "@/hooks/use-process-run-step-runs";
+import { ProcessStepRow } from "@/components/process";
 import { ChevronLeft, CheckCircle2, Circle } from "lucide-react";
 
 export default function ProcessPhaseSteps() {
@@ -49,23 +50,22 @@ export default function ProcessPhaseSteps() {
     const done = r.status === "completed";
     return (
       <li key={r.id}>
-        <button
-          type="button"
+        <ProcessStepRow
+          leading={
+            done ? (
+              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+            ) : (
+              <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
+            )
+          }
+          title={name}
+          trailing={r.status}
           onClick={() =>
             navigate(
               `/worker/processes/${processDefinitionId}/runs/${runId}/phases/${encodeURIComponent(group.phaseId)}/fill/${r.id}`,
             )
           }
-          className="w-full flex items-center gap-3 rounded-lg border px-4 py-3 bg-card hover:bg-muted/50 text-start"
-        >
-          {done ? (
-            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-          ) : (
-            <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
-          )}
-          <span className="flex-1 font-medium">{name}</span>
-          <span className="text-xs text-muted-foreground">{r.status}</span>
-        </button>
+        />
       </li>
     );
   };

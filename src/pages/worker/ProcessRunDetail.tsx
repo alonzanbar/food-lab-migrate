@@ -1,9 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useProcessRunStepRuns } from "@/hooks/use-process-run-step-runs";
-import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from "lucide-react";
+import { useProcessRunStepRuns, phaseIdForStepRunRow } from "@/hooks/use-process-run-step-runs";
+import { readLastOpenedStep, clearLastOpenedStep } from "@/lib/lastOpenedProcessStep";
+import { PhaseNavRow } from "@/components/process";
+import { ChevronLeft } from "lucide-react";
 
 export default function ProcessRunDetail() {
   const { processDefinitionId, runId } = useParams<{
@@ -13,10 +15,35 @@ export default function ProcessRunDetail() {
   const { tenantId } = useAuth();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
+  const resumeDone = useRef(false);
 
   const { groups, loading } = useProcessRunStepRuns(runId, tenantId);
 
   const title = useMemo(() => t("process.runPhases"), [t]);
+
+  useEffect(() => {
+    if (loading || !tenantId || !runId || !processDefinitionId || groups.length === 0) return;
+    if (resumeDone.current) return;
+    const last = readLastOpenedStep(tenantId, runId);
+    if (!last || last.processDefinitionId !== processDefinitionId) return;
+
+    const row = groups.flatMap((g) => g.steps).find((s) => s.id === last.stepRunId);
+    if (!row) {
+      clearLastOpenedStep(tenantId, runId);
+      return;
+    }
+    if (row.status === "completed") {
+      clearLastOpenedStep(tenantId, runId);
+      return;
+    }
+
+    resumeDone.current = true;
+    const phaseId = phaseIdForStepRunRow(row);
+    navigate(
+      `/worker/processes/${processDefinitionId}/runs/${runId}/phases/${encodeURIComponent(phaseId)}/fill/${last.stepRunId}`,
+      { replace: true },
+    );
+  }, [loading, tenantId, runId, processDefinitionId, groups, navigate]);
 
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>;
@@ -46,26 +73,17 @@ export default function ProcessRunDetail() {
             const allDone = total > 0 && done === total;
             return (
               <li key={g.phaseId}>
-                <button
-                  type="button"
+                <PhaseNavRow
+                  title={phaseTitle}
+                  allDone={allDone}
+                  done={done}
+                  total={total}
                   onClick={() =>
                     navigate(
                       `/worker/processes/${processDefinitionId}/runs/${runId}/phases/${encodeURIComponent(g.phaseId)}`,
                     )
                   }
-                  className="w-full flex items-center gap-3 rounded-lg border px-4 py-3 bg-card hover:bg-muted/50 text-start"
-                >
-                  {allDone ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
-                  )}
-                  <span className="flex-1 font-semibold">{phaseTitle}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {done}/{total}
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-                </button>
+                />
               </li>
             );
           })}

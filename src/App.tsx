@@ -8,9 +8,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 import Login from "./pages/Login";
 import AdminLayout from "./pages/admin/AdminLayout";
-import FormsList from "./pages/admin/FormsList";
-import UploadForm from "./pages/admin/UploadForm";
-import FormReview from "./pages/admin/FormReview";
+import AdminProcessesList from "./pages/admin/AdminProcessesList";
+import AdminProcessOutline from "./pages/admin/AdminProcessOutline";
 import ReportsList from "./pages/admin/ReportsList";
 import CreateReport from "./pages/admin/CreateReport";
 import ReportResults from "./pages/admin/ReportResults";
@@ -72,7 +71,7 @@ function AppRoutes() {
   }
 
   // Redirect based on role (superuser with tenant uses admin/worker from that tenant)
-  const defaultPath = role === "admin" ? "/admin/forms" : "/worker";
+  const defaultPath = role === "admin" ? "/admin/processes" : "/worker";
 
   return (
     <Routes>
@@ -81,10 +80,9 @@ function AppRoutes() {
 
       {/* Admin routes */}
       <Route path="/admin" element={role === "admin" ? <AdminLayout /> : <Navigate to="/worker" replace />}>
-        <Route index element={<Navigate to="/admin/forms" replace />} />
-        <Route path="forms" element={<FormsList />} />
-        <Route path="forms/upload" element={<UploadForm />} />
-        <Route path="forms/:id" element={<FormReview />} />
+        <Route index element={<Navigate to="/admin/processes" replace />} />
+        <Route path="processes/:processDefinitionId" element={<AdminProcessOutline />} />
+        <Route path="processes" element={<AdminProcessesList />} />
         <Route path="reports" element={<ReportsList />} />
         <Route path="reports/create" element={<CreateReport />} />
         <Route path="reports/:id" element={<ReportResults />} />

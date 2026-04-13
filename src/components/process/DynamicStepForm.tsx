@@ -115,6 +115,8 @@ export function DynamicStepForm(props: {
     meta?: StepFormSubmitMeta,
   ) => void | Promise<void>;
   submitLabel: string;
+  /** Shown below instruction banner (e.g. final step closes the run). */
+  noticeBanner?: string | null;
   disabled?: boolean;
 }) {
   const { lang, t } = useLanguage();
@@ -391,6 +393,7 @@ export function DynamicStepForm(props: {
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
         {instructions ? <InstructionsBanner text={instructions} /> : null}
+        {props.noticeBanner ? <InstructionsBanner text={props.noticeBanner} /> : null}
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full text-sm">
             <thead>
@@ -440,6 +443,7 @@ export function DynamicStepForm(props: {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {instructions ? <InstructionsBanner text={instructions} /> : null}
+      {props.noticeBanner ? <InstructionsBanner text={props.noticeBanner} /> : null}
       {fields.map((f) =>
         renderField(f, single[f.key] || "", (v) => setSingle((s) => ({ ...s, [f.key]: v }))),
       )}

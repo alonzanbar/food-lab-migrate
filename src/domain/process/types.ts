@@ -78,6 +78,8 @@ export interface ProcessStep {
   required: boolean;
   repeatable: boolean;
   skippable: boolean;
+  /** At most one per process_definition; completing this step run can close the run when guards pass. */
+  is_final_step: boolean;
   created_at: string;
   updated_at: string;
 }

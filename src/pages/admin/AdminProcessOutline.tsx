@@ -4,9 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProcessStepsOrdered } from "@/lib/processRuntime";
-import { PhaseTitleStrip, ProcessStepRow } from "@/components/process";
+import { HierarchyNavBar, PhaseTitleStrip, ProcessStepRow } from "@/components/process";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Circle } from "lucide-react";
+import { Circle } from "lucide-react";
 
 type ProcessDef = {
   id: string;
@@ -148,17 +148,16 @@ export default function AdminProcessOutline() {
   if (missingDef || !defn) {
     return (
       <div className="space-y-4 py-4">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate("/admin/processes")}
-            className="p-2 -ms-2 text-muted-foreground"
-            aria-label={t("common.back")}
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <h2 className="text-xl font-bold font-display">{t("common.noData")}</h2>
-        </div>
+        <HierarchyNavBar
+          backTo="/admin/processes"
+          backLabel={t("common.back")}
+          onNavigate={navigate}
+          items={[
+            { label: t("admin.tenantProcessesTitle"), to: "/admin/processes" },
+            { label: t("common.noData"), current: true },
+          ]}
+        />
+        <h2 className="text-xl font-bold font-display">{t("common.noData")}</h2>
         <p className="text-sm text-muted-foreground">{t("admin.processOutlineUnavailable")}</p>
       </div>
     );
@@ -166,21 +165,20 @@ export default function AdminProcessOutline() {
 
   return (
     <div className="space-y-4 py-4">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => navigate("/admin/processes")}
-          className="p-2 -ms-2 text-muted-foreground"
-          aria-label={t("common.back")}
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <div>
-          <h2 className="text-xl font-bold font-display">{title}</h2>
-          <p className="text-sm text-muted-foreground">
-            {defn.code} · v{defn.version}
-          </p>
-        </div>
+      <HierarchyNavBar
+        backTo="/admin/processes"
+        backLabel={t("common.back")}
+        onNavigate={navigate}
+        items={[
+          { label: t("admin.tenantProcessesTitle"), to: "/admin/processes" },
+          { label: title, current: true },
+        ]}
+      />
+      <div>
+        <h2 className="text-xl font-bold font-display">{title}</h2>
+        <p className="text-sm text-muted-foreground">
+          {defn.code} · v{defn.version}
+        </p>
       </div>
 
       <p className="text-sm text-muted-foreground">{t("admin.processOutlineReadOnlyHint")}</p>

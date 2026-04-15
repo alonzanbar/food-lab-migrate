@@ -15,7 +15,8 @@
     "prepare": "husky",
     "prebuild": "npm run generate:step-definitions-migration",
     "generate:step-definitions-migration": "tsx scripts/generate-step-definitions-migration.ts",
-    "pre-commit:step-catalog": "tsx scripts/pre-commit-step-catalog.ts"
+    "pre-commit:step-catalog": "tsx scripts/pre-commit-step-catalog.ts",
+    "get:jwt": "tsx scripts/get-local-jwt.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

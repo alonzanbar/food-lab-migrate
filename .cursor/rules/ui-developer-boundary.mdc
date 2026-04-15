@@ -1,0 +1,11 @@
+---
+description: Enforce developer-agent implementation boundaries
+alwaysApply: true
+---
+
+# UI Developer Boundary
+
+- Implement only from approved specs in `docs/ui-specs/`.
+- Do not introduce UX behavior not present in spec.
+- If a spec is ambiguous, ask for clarification instead of guessing.
+- Provide traceability from acceptance criteria to changed files.

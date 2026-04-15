@@ -168,7 +168,11 @@ export const translations = {
   },
   "process.submitFinalStep": { he: "שמור וסיים ריצה", en: "Save and complete run" },
   "process.runCompletedToast": { he: "הריצה הושלמה", en: "Run completed" },
+  "process.downloadRunPdf": { he: "הורדת PDF סיכום ריצה", en: "Download run summary PDF" },
+  "process.pdfDownloadFailed": { he: "הורדת ה-PDF נכשלה", en: "Could not download PDF" },
   "process.addRow": { he: "הוסף שורה", en: "Add row" },
+  "process.saveAndAddRow": { he: "שמור והוסף שורה", en: "Save & Add Row" },
+  "process.finishStep": { he: "סיים שלב", en: "Finish Step" },
   "process.approved": { he: "מאושר", en: "Approved" },
   "process.notApproved": { he: "לא מאושר", en: "Not approved" },
 

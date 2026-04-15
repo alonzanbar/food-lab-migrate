@@ -3,8 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProcessRunStepRuns, type StepRunRow } from "@/hooks/use-process-run-step-runs";
-import { ProcessStepRow } from "@/components/process";
-import { ChevronLeft, CheckCircle2, Circle } from "lucide-react";
+import { HierarchyNavBar, ProcessStepRow } from "@/components/process";
+import { CheckCircle2, Circle } from "lucide-react";
 
 export default function ProcessPhaseSteps() {
   const { processDefinitionId, runId, phaseId } = useParams<{
@@ -27,16 +27,16 @@ export default function ProcessPhaseSteps() {
   if (!group) {
     return (
       <div className="space-y-4 py-4">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/worker/processes/${processDefinitionId}/runs/${runId}`)}
-            className="p-2 -ms-2 text-muted-foreground"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <h2 className="text-xl font-bold font-display">{t("common.noData")}</h2>
-        </div>
+        <HierarchyNavBar
+          backTo={`/worker/processes/${processDefinitionId}/runs/${runId}`}
+          backLabel={t("common.back")}
+          onNavigate={navigate}
+          items={[
+            { label: t("process.runPhases"), to: `/worker/processes/${processDefinitionId}/runs/${runId}` },
+            { label: t("common.noData"), current: true },
+          ]}
+        />
+        <h2 className="text-xl font-bold font-display">{t("common.noData")}</h2>
         <p className="text-sm text-muted-foreground">{t("process.phaseNotFound")}</p>
       </div>
     );
@@ -72,16 +72,16 @@ export default function ProcessPhaseSteps() {
 
   return (
     <div className="space-y-4 py-4">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => navigate(`/worker/processes/${processDefinitionId}/runs/${runId}`)}
-          className="p-2 -ms-2 text-muted-foreground"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <h2 className="text-xl font-bold font-display">{phaseTitle}</h2>
-      </div>
+      <HierarchyNavBar
+        backTo={`/worker/processes/${processDefinitionId}/runs/${runId}`}
+        backLabel={t("common.back")}
+        onNavigate={navigate}
+        items={[
+          { label: t("process.runPhases"), to: `/worker/processes/${processDefinitionId}/runs/${runId}` },
+          { label: phaseTitle, current: true },
+        ]}
+      />
+      <h2 className="text-xl font-bold font-display">{phaseTitle}</h2>
       <p className="text-sm text-muted-foreground">{t("process.phaseStepsSubtitle")}</p>
       <ul className="space-y-2">{group.steps.map(renderStepRow)}</ul>
     </div>

@@ -186,6 +186,7 @@ export interface FieldDef {
   field_type: FieldType;
   required?: boolean;
   options?: string[];
+  default_value?: unknown;
   unit?: string;
   validation?: Record<string, unknown>;
 }

@@ -22,3 +22,6 @@ verify_jwt = false
 
 [functions.process-domain-event-dispatch]
 verify_jwt = false
+
+[functions.run-summary-pdf]
+verify_jwt = true

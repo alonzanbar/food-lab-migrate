@@ -18,6 +18,7 @@ interface FormField {
   type: string;
   required: boolean;
   options?: string[];
+  default_value?: unknown;
 }
 
 interface FormData {
@@ -62,7 +63,16 @@ export default function FillForm() {
       const today = new Date().toISOString().split("T")[0];
       const defaults: Record<string, any> = {};
       (data.extracted_schema as any)?.fields?.forEach((f: FormField) => {
-        defaults[f.id] = f.type === "boolean" ? false : f.type === "date" ? today : f.type === "time" ? new Date().toTimeString().slice(0, 5) : "";
+        defaults[f.id] =
+          f.default_value !== undefined
+            ? f.default_value
+            : f.type === "boolean"
+              ? false
+              : f.type === "date"
+                ? today
+                : f.type === "time"
+                  ? new Date().toTimeString().slice(0, 5)
+                  : "";
       });
       setValues(defaults);
       setLoading(false);

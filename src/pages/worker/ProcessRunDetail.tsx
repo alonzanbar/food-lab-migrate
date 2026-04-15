@@ -1,11 +1,27 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProcessRunStepRuns, phaseIdForStepRunRow } from "@/hooks/use-process-run-step-runs";
 import { readLastOpenedStep, clearLastOpenedStep } from "@/lib/lastOpenedProcessStep";
-import { PhaseNavRow } from "@/components/process";
-import { ChevronLeft } from "lucide-react";
+import { downloadRunSummaryPdf } from "@/lib/downloadRunSummaryPdf";
+import { HierarchyNavBar, PhaseNavRow } from "@/components/process";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
+
+type ProcessRunStatusClient = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        eq: (column: string, value: string) => {
+          maybeSingle: () => Promise<{ data: unknown; error: { message?: string } | null }>;
+        };
+      };
+    };
+  };
+};
 
 export default function ProcessRunDetail() {
   const { processDefinitionId, runId } = useParams<{
@@ -18,8 +34,32 @@ export default function ProcessRunDetail() {
   const resumeDone = useRef(false);
 
   const { groups, loading } = useProcessRunStepRuns(runId, tenantId);
+  const [runStatus, setRunStatus] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const title = useMemo(() => t("process.runPhases"), [t]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!runId || !tenantId) return;
+      const { data, error } = await (supabase as unknown as ProcessRunStatusClient)
+        .from("process_runs")
+        .select("status")
+        .eq("id", runId)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && data && typeof (data as { status?: string }).status === "string") {
+        setRunStatus((data as { status: string }).status);
+      } else {
+        setRunStatus(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [runId, tenantId]);
 
   useEffect(() => {
     if (loading || !tenantId || !runId || !processDefinitionId || groups.length === 0) return;
@@ -49,17 +89,44 @@ export default function ProcessRunDetail() {
     return <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>;
   }
 
+  async function handleDownloadPdf() {
+    if (!runId) return;
+    setPdfLoading(true);
+    try {
+      await downloadRunSummaryPdf(supabase, { processRunId: runId, lang });
+    } catch (e) {
+      console.error(e);
+      toast.error(t("process.pdfDownloadFailed"));
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4 py-4">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => navigate(`/worker/processes/${processDefinitionId}`)}
-          className="p-2 -ms-2 text-muted-foreground"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <h2 className="text-xl font-bold font-display">{title}</h2>
+      <HierarchyNavBar
+        backTo={`/worker/processes/${processDefinitionId}`}
+        backLabel={t("common.back")}
+        onNavigate={navigate}
+        items={[
+          { label: title, current: true },
+        ]}
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-xl font-bold font-display flex-1 min-w-0">{title}</h2>
+        {runStatus === "completed" ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1"
+            disabled={pdfLoading}
+            onClick={handleDownloadPdf}
+          >
+            <Download className="h-4 w-4" />
+            {pdfLoading ? t("common.loading") : t("process.downloadRunPdf")}
+          </Button>
+        ) : null}
       </div>
 
       {groups.length === 0 ? (

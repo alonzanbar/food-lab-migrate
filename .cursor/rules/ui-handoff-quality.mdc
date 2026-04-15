@@ -1,0 +1,17 @@
+---
+description: Ensure handoff quality between design and implementation
+alwaysApply: true
+---
+
+# UI Handoff Quality
+
+A UI spec is implementation-ready only if it includes:
+- Scope (in/out)
+- Screen states (loading, empty, error, success)
+- Navigation rules
+- Validation rules
+- Responsive behavior
+- Accessibility notes
+- Acceptance checklist with pass/fail wording
+
+If any item is missing, request spec completion before implementation.

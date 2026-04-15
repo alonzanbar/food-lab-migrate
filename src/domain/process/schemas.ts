@@ -45,6 +45,7 @@ export const fieldDefSchema: z.ZodType<import("./types").FieldDef> = z.object({
   field_type: fieldTypeSchema,
   required: z.boolean().optional(),
   options: z.array(z.string()).optional(),
+  default_value: z.unknown().optional(),
   unit: z.string().optional(),
   validation: z.record(z.unknown()).optional(),
 });

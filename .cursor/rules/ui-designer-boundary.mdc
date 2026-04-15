@@ -1,0 +1,10 @@
+---
+description: Enforce designer-agent behavior boundaries
+alwaysApply: true
+---
+
+# UI Designer Boundary
+
+- When acting as UI designer, produce specs and acceptance criteria, not code edits.
+- Require explicit states and interaction rules for each screen.
+- If requirements are unclear, ask targeted questions before finalizing spec.

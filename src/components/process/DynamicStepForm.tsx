@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { translateSelectOptionLabel } from "@/i18n/processSelectOptions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ type FieldDef = {
   field_type: string;
   required?: boolean;
   options?: string[];
+  default_value?: unknown;
   unit?: string;
   validation?: Record<string, unknown>;
 };
@@ -41,11 +42,16 @@ function labelFor(f: FieldDef, lang: string) {
   return lang === "he" ? f.label_he : f.label_en;
 }
 
+function stringifyFieldValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  return String(value);
+}
+
 function emptyRow(cols: FieldDef[], rowNumber1Based: number) {
   const r: Record<string, string> = {};
   for (const c of cols) {
     if (c.validation?.auto_row_index) r[c.key] = String(rowNumber1Based);
-    else r[c.key] = "";
+    else r[c.key] = stringifyFieldValue(c.default_value);
   }
   return r;
 }
@@ -118,6 +124,8 @@ export function DynamicStepForm(props: {
   /** Shown below instruction banner (e.g. final step closes the run). */
   noticeBanner?: string | null;
   disabled?: boolean;
+  onBack?: () => void;
+  onSaveAndAddRow?: (payload: Record<string, unknown>) => void | Promise<void>;
 }) {
   const { lang, t } = useLanguage();
   const { schema, parameterization } = props;
@@ -136,7 +144,8 @@ export function DynamicStepForm(props: {
     if (schema.input_mode === "single_form" || schema.input_mode === "hybrid") {
       for (const f of schema.fields || []) {
         const v = init[f.key];
-        out[f.key] = v === undefined || v === null ? "" : String(v);
+        out[f.key] =
+          v === undefined || v === null ? stringifyFieldValue(f.default_value) : stringifyFieldValue(v);
       }
     }
     return out;
@@ -152,7 +161,10 @@ export function DynamicStepForm(props: {
         const row: Record<string, string> = {};
         for (const c of cols) {
           const v = r[c.key];
-          let cell = v === undefined || v === null ? "" : String(v);
+          let cell =
+            v === undefined || v === null
+              ? stringifyFieldValue(c.default_value)
+              : stringifyFieldValue(v);
           if (c.validation?.auto_row_index && !cell.trim()) {
             cell = String(i + 1);
           }
@@ -166,8 +178,17 @@ export function DynamicStepForm(props: {
 
   const [pendingImages, setPendingImages] = useState<Record<string, File | null>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [activeRowIndex, setActiveRowIndex] = useState(0);
 
   const fields = flatFieldsForSchema(schema);
+
+  useEffect(() => {
+    if (schema.input_mode !== "matrix") return;
+    setActiveRowIndex((idx) => {
+      if (rows.length === 0) return 0;
+      return Math.min(idx, rows.length - 1);
+    });
+  }, [rows, schema.input_mode]);
 
   function pickImageFile(fieldKey: string, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -175,24 +196,80 @@ export function DynamicStepForm(props: {
     e.target.value = "";
   }
 
+  function validateMatrixRowRequired(row: Record<string, string>) {
+    if (schema.input_mode !== "matrix") return true;
+    for (const c of schema.columns) {
+      if (c.validation?.auto_row_index || !c.required) continue;
+      const raw = row[c.key]?.trim() ?? "";
+      if (!raw) {
+        alert(t("common.required"));
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function buildCleanedMatrixRows(sourceRows: Record<string, string>[]) {
+    if (schema.input_mode !== "matrix") return [];
+    return sourceRows.map((r, ri) => {
+      const o: Record<string, unknown> = {};
+      for (const c of schema.columns) {
+        if (c.validation?.auto_row_index) {
+          const raw = r[c.key]?.trim() || String(ri + 1);
+          o[c.key] = parseInt(raw, 10);
+          continue;
+        }
+        const raw = r[c.key]?.trim() ?? "";
+        o[c.key] = coerceValue(c.field_type, raw);
+      }
+      return o;
+    });
+  }
+
+  function setMatrixCellValue(rowIndex: number, key: string, value: string) {
+    setRows((prev) => {
+      const next = [...prev];
+      next[rowIndex] = { ...next[rowIndex], [key]: value };
+      return next;
+    });
+  }
+
+  function appendEmptyMatrixRow() {
+    if (schema.input_mode !== "matrix") return;
+    setRows((prev) => {
+      const next = [...prev, emptyRow(schema.columns, prev.length + 1)];
+      setActiveRowIndex(next.length - 1);
+      return next;
+    });
+  }
+
+  async function handleMatrixSaveAndAddRow() {
+    if (schema.input_mode !== "matrix" || !props.onSaveAndAddRow) return;
+    const currentRow = rows[activeRowIndex];
+    if (!currentRow) return;
+    if (!validateMatrixRowRequired(currentRow)) return;
+
+    setSubmitting(true);
+    try {
+      await props.onSaveAndAddRow({ rows: buildCleanedMatrixRows(rows) });
+      appendEmptyMatrixRow();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
       if (schema.input_mode === "matrix") {
-        const cleaned = rows.map((r, ri) => {
-          const o: Record<string, unknown> = {};
-          for (const c of schema.columns) {
-            if (c.validation?.auto_row_index) {
-              const raw = r[c.key]?.trim() || String(ri + 1);
-              o[c.key] = parseInt(raw, 10);
-              continue;
-            }
-            const raw = r[c.key]?.trim() ?? "";
-            o[c.key] = coerceValue(c.field_type, raw);
+        for (const row of rows) {
+          if (!validateMatrixRowRequired(row)) {
+            setSubmitting(false);
+            return;
           }
-          return o;
-        });
+        }
+        const cleaned = buildCleanedMatrixRows(rows);
         await props.onSubmit({ rows: cleaned });
       } else {
         const imageFiles: Record<string, File> = {};
@@ -390,11 +467,63 @@ export function DynamicStepForm(props: {
   );
 
   if (schema.input_mode === "matrix") {
+    const activeRow = rows[activeRowIndex];
+    const rowLabel = lang === "he" ? "שורה" : "Row";
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
         {instructions ? <InstructionsBanner text={instructions} /> : null}
         {props.noticeBanner ? <InstructionsBanner text={props.noticeBanner} /> : null}
-        <div className="overflow-x-auto border rounded-lg">
+        <div className="space-y-3 md:hidden">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {rowLabel} {activeRowIndex + 1}/{rows.length}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={appendEmptyMatrixRow}
+              disabled={props.disabled || submitting}
+            >
+              {t("process.addRow")}
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {rows.map((_, ri) => (
+              <Button
+                key={`row-chip-${ri}`}
+                type="button"
+                variant={ri === activeRowIndex ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveRowIndex(ri)}
+                disabled={props.disabled || submitting}
+              >
+                {rowLabel} {ri + 1}
+              </Button>
+            ))}
+          </div>
+          {activeRow ? (
+            <div className="space-y-3 border rounded-lg p-3">
+              {schema.columns.map((c) => (
+                <div key={`mobile-row-${activeRowIndex}-${c.key}`} className="space-y-2">
+                  <Label htmlFor={`rm-${activeRowIndex}-${c.key}`}>
+                    {labelFor(c, lang)}
+                    {c.unit ? ` (${c.unit})` : ""}
+                    {c.required ? " *" : ""}
+                  </Label>
+                  {renderMatrixCellControl(
+                    c,
+                    activeRow[c.key] ?? "",
+                    (v) => setMatrixCellValue(activeRowIndex, c.key, v),
+                    `rm-${activeRowIndex}-${c.key}`,
+                    activeRowIndex,
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="hidden md:block overflow-x-auto border rounded-lg">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
@@ -413,11 +542,7 @@ export function DynamicStepForm(props: {
                       {renderMatrixCellControl(
                         c,
                         row[c.key] ?? "",
-                        (v) => {
-                          const next = [...rows];
-                          next[ri] = { ...next[ri], [c.key]: v };
-                          setRows(next);
-                        },
+                        (v) => setMatrixCellValue(ri, c.key, v),
                         `m-${ri}-${c.key}`,
                         ri,
                       )}
@@ -428,14 +553,29 @@ export function DynamicStepForm(props: {
             </tbody>
           </table>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setRows([...rows, emptyRow(schema.columns, rows.length + 1)])}
-        >
-          {t("process.addRow")}
-        </Button>
-        {submitButton}
+        <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur p-2 flex flex-col gap-2 sm:flex-row sm:justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => props.onBack?.()}
+            disabled={props.disabled || submitting || !props.onBack}
+          >
+            {t("common.back")}
+          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleMatrixSaveAndAddRow}
+              disabled={props.disabled || submitting || !props.onSaveAndAddRow}
+            >
+              {t("process.saveAndAddRow")}
+            </Button>
+            <Button type="submit" disabled={props.disabled || submitting}>
+              {submitting ? t("common.loading") : t("process.finishStep")}
+            </Button>
+          </div>
+        </div>
       </form>
     );
   }

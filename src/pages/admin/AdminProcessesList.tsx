@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { TranslationKey } from "@/i18n/translations";
-import { ProcessDefinitionCard } from "@/components/process";
+import { HierarchyNavBar, ProcessDefinitionCard } from "@/components/process";
 
 type ProcessDef = {
   id: string;
@@ -73,6 +73,10 @@ export default function AdminProcessesList() {
 
   return (
     <div className="space-y-4 py-4">
+      <HierarchyNavBar
+        onNavigate={navigate}
+        items={[{ label: t("admin.tenantProcessesTitle"), current: true }]}
+      />
       <div>
         <h2 className="text-2xl font-bold font-display">{t("admin.tenantProcessesTitle")}</h2>
         <p className="text-sm text-muted-foreground mt-1">{t("admin.processesViewOnlyHint")}</p>

@@ -218,6 +218,11 @@ export type ProcessStepParameterization = {
   validation?: ValidationParameterization;
   timing?: Record<string, unknown>;
   approvals?: ApprovalsParameterization;
+  /**
+   * Per-process default field/column values (keyed like `schema.fields[].key` / matrix column `key`).
+   * Applied when opening a step run after `captured_data`, before `FieldDef.default_value` on the catalog schema.
+   */
+  field_defaults?: Record<string, unknown>;
 } & Record<string, unknown>;
 
 export interface DataRules {

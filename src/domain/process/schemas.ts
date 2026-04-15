@@ -114,6 +114,7 @@ export const processStepParameterizationSchema = z
     validation: validationParameterizationSchema.optional(),
     timing: z.record(z.unknown()).optional(),
     approvals: approvalsParameterizationSchema.optional(),
+    field_defaults: z.record(z.unknown()).optional(),
   })
   .passthrough();
 

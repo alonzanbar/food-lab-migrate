@@ -47,11 +47,17 @@ function stringifyFieldValue(value: unknown): string {
   return String(value);
 }
 
-function emptyRow(cols: FieldDef[], rowNumber1Based: number) {
+function emptyRow(
+  cols: FieldDef[],
+  rowNumber1Based: number,
+  processFieldDefaults?: Record<string, unknown> | null,
+) {
   const r: Record<string, string> = {};
   for (const c of cols) {
     if (c.validation?.auto_row_index) r[c.key] = String(rowNumber1Based);
-    else r[c.key] = stringifyFieldValue(c.default_value);
+    else if (processFieldDefaults && Object.prototype.hasOwnProperty.call(processFieldDefaults, c.key)) {
+      r[c.key] = stringifyFieldValue(processFieldDefaults[c.key]);
+    } else r[c.key] = stringifyFieldValue(c.default_value);
   }
   return r;
 }
@@ -115,6 +121,8 @@ function InstructionsBanner({ text }: { text: string }) {
 export function DynamicStepForm(props: {
   schema: Schema;
   parameterization?: Record<string, unknown> | null;
+  /** Per-process_step defaults (`parameterization.field_defaults`); used for matrix new rows and redundant if initialData already merged. */
+  processFieldDefaults?: Record<string, unknown> | null;
   initialData?: Record<string, unknown>;
   onSubmit: (
     payload: Record<string, unknown>,
@@ -128,7 +136,7 @@ export function DynamicStepForm(props: {
   onSaveAndAddRow?: (payload: Record<string, unknown>) => void | Promise<void>;
 }) {
   const { lang, t } = useLanguage();
-  const { schema, parameterization } = props;
+  const { schema, parameterization, processFieldDefaults } = props;
 
   const instructions = useMemo(() => {
     const ctx = (parameterization?.context || {}) as Record<string, unknown>;
@@ -141,12 +149,17 @@ export function DynamicStepForm(props: {
   const [single, setSingle] = useState<Record<string, string>>(() => {
     const init = props.initialData || {};
     const out: Record<string, string> = {};
-    if (schema.input_mode === "single_form" || schema.input_mode === "hybrid") {
-      for (const f of schema.fields || []) {
+    const fillFields = (fields: FieldDef[] | undefined) => {
+      for (const f of fields || []) {
         const v = init[f.key];
         out[f.key] =
           v === undefined || v === null ? stringifyFieldValue(f.default_value) : stringifyFieldValue(v);
       }
+    };
+    if (schema.input_mode === "single_form" || schema.input_mode === "hybrid") {
+      fillFields(schema.fields);
+    } else if (schema.input_mode === "system" && (schema.fields?.length ?? 0) > 0) {
+      fillFields(schema.fields);
     }
     return out;
   });
@@ -173,7 +186,7 @@ export function DynamicStepForm(props: {
         return row;
       });
     }
-    return [emptyRow(cols, 1)];
+    return [emptyRow(cols, 1, processFieldDefaults ?? null)];
   });
 
   const [pendingImages, setPendingImages] = useState<Record<string, File | null>>({});
@@ -237,7 +250,7 @@ export function DynamicStepForm(props: {
   function appendEmptyMatrixRow() {
     if (schema.input_mode !== "matrix") return;
     setRows((prev) => {
-      const next = [...prev, emptyRow(schema.columns, prev.length + 1)];
+      const next = [...prev, emptyRow(schema.columns, prev.length + 1, processFieldDefaults ?? null)];
       setActiveRowIndex(next.length - 1);
       return next;
     });
@@ -585,7 +598,7 @@ export function DynamicStepForm(props: {
       {instructions ? <InstructionsBanner text={instructions} /> : null}
       {props.noticeBanner ? <InstructionsBanner text={props.noticeBanner} /> : null}
       {fields.map((f) =>
-        renderField(f, single[f.key] || "", (v) => setSingle((s) => ({ ...s, [f.key]: v }))),
+        renderField(f, single[f.key] ?? "", (v) => setSingle((s) => ({ ...s, [f.key]: v }))),
       )}
       {submitButton}
     </form>

@@ -14,6 +14,12 @@ import {
   clearLastOpenedStep,
 } from "@/lib/lastOpenedProcessStep";
 import { downloadRunSummaryPdf } from "@/lib/downloadRunSummaryPdf";
+import {
+  mergeFlatStepInitial,
+  mergeMatrixRowsInitial,
+  pickFieldDefaults,
+  type FieldDefLike,
+} from "@/lib/mergeStepFieldDefaults";
 
 function phaseIdFromProcessSteps(
   stepRunRowId: string,
@@ -74,6 +80,14 @@ export default function ProcessStepFill() {
   const [inputMode, setInputMode] = useState<string>("single_form");
   const [isFinalStep, setIsFinalStep] = useState(false);
   const [phaseTitle, setPhaseTitle] = useState("");
+
+  function asFieldList(raw: unknown): FieldDefLike[] {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(
+      (x): x is FieldDefLike =>
+        !!x && typeof x === "object" && typeof (x as FieldDefLike).key === "string",
+    );
+  }
 
   useEffect(() => {
     (async () => {
@@ -141,7 +155,23 @@ export default function ProcessStepFill() {
           : ps?.process_phases?.name_en || "",
       );
       const cap = row.captured_data || {};
-      setInitial(cap);
+      const fd = pickFieldDefaults(ps?.parameterization);
+      const rawSchema = sd.schema as { input_mode?: string; fields?: unknown[]; columns?: unknown[] };
+      const mode = rawSchema.input_mode || sd.input_mode || "single_form";
+
+      if (mode === "matrix") {
+        const columns = asFieldList(rawSchema.columns);
+        const rowsRaw = cap.rows;
+        const rows = Array.isArray(rowsRaw) ? rowsRaw : [];
+        if (rows.length > 0) {
+          const { rows: merged } = mergeMatrixRowsInitial(cap, fd, columns);
+          setInitial({ rows: merged });
+        } else {
+          setInitial({});
+        }
+      } else {
+        setInitial(mergeFlatStepInitial(cap, fd, asFieldList(rawSchema.fields)));
+      }
 
       const rowStatus = row.status;
       if (rowStatus === "completed") {
@@ -237,6 +267,8 @@ export default function ProcessStepFill() {
       ? { input_mode: "matrix" as const, columns: (raw.columns || []) as never[] }
       : { input_mode: "single_form" as const, fields: (raw.fields || []) as never[] };
 
+  const processFieldDefaults = pickFieldDefaults(parameterization);
+
   return (
     <div className="space-y-4 py-4">
       <HierarchyNavBar
@@ -254,6 +286,7 @@ export default function ProcessStepFill() {
       <DynamicStepForm
         schema={mergedSchema as Parameters<typeof DynamicStepForm>[0]["schema"]}
         parameterization={parameterization}
+        processFieldDefaults={processFieldDefaults ?? null}
         initialData={initial}
         onSubmit={handleSave}
         submitLabel={isFinalStep ? t("process.submitFinalStep") : t("common.save")}

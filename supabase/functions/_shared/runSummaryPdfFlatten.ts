@@ -4,7 +4,32 @@ export const MAX_MATRIX_ROWS = 45;
 
 export type Lang = "he" | "en";
 
-export type FieldDef = { key: string; label_he: string; label_en: string; field_type?: string };
+export type FieldDef = {
+  key: string;
+  label_he: string;
+  label_en: string;
+  field_type?: string;
+};
+
+function formatSingleFormValue(
+  v: unknown,
+  fieldType: string | undefined,
+  lang: Lang,
+): string {
+  if (v === null || v === undefined) return "";
+  if (fieldType === "name_and_signature" && typeof v === "object" && v !== null && !Array.isArray(v)) {
+    const o = v as Record<string, unknown>;
+    const name = typeof o.name === "string" ? o.name.trim() : "";
+    const urlRaw = o.signatureUrl ?? o.signature_url;
+    const url = typeof urlRaw === "string" ? urlRaw.trim() : "";
+    const parts: string[] = [];
+    if (name) parts.push(lang === "he" ? `שם: ${name}` : `Name: ${name}`);
+    if (url) parts.push(lang === "he" ? `חתימה: ${url}` : `Signature: ${url}`);
+    return parts.join(lang === "he" ? " · " : " · ");
+  }
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
 export type Schema = Record<string, unknown>;
 
 export function labelForField(f: FieldDef, lang: Lang): string {
@@ -57,7 +82,9 @@ export function flattenCaptured(
     out.push(headers);
     for (let i = 0; i < slice.length; i++) {
       const r = slice[i];
-      const cells = cols.map((c) => String(r[c.key] ?? "")).join(" | ");
+      const cells = cols
+        .map((c) => formatSingleFormValue(r[c.key], c.field_type, lang))
+        .join(" | ");
       out.push(`${i + 1}. ${cells}`);
     }
     if (rows.length > MAX_MATRIX_ROWS) {
@@ -68,11 +95,12 @@ export function flattenCaptured(
   }
 
   const fields = (schema?.fields as FieldDef[]) || [];
-  const labelByKey = new Map(fields.map((f) => [f.key, labelForField(f, lang)]));
+  const fieldByKey = new Map(fields.map((f) => [f.key, f]));
   for (const [k, v] of Object.entries(captured)) {
     if (k === "rows") continue;
-    const label = labelByKey.get(k) ?? k;
-    const val = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+    const f = fieldByKey.get(k);
+    const label = f ? labelForField(f, lang) : k;
+    const val = formatSingleFormValue(v, f?.field_type, lang);
     out.push(`${label}: ${val}`);
   }
   if (out.length === 0) out.push(emptyPlaceholder(lang));

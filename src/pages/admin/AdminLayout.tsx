@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GitBranch, BarChart3, LogOut, Globe, Users, Building2 } from "lucide-react";
 
 export default function AdminLayout() {
-  const { signOut, user, isSuperuser } = useAuth();
+  const { signOut, user, isSuperuser, tenantId, tenantName } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const navigate = useNavigate();
 
@@ -49,6 +49,14 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="p-4 border-t border-border space-y-2">
+          <div className="text-xs text-muted-foreground px-2 space-y-1">
+            <div className="truncate">
+              {t("admin.tenantNameLabel")}: {tenantName || t("common.noData")}
+            </div>
+            <div className="break-all" dir="ltr">
+              {t("admin.tenantIdLabel")}: {tenantId || "-"}
+            </div>
+          </div>
           <div className="text-xs text-muted-foreground truncate px-2">{user?.email}</div>
           <button
             onClick={() => setLang(lang === "he" ? "en" : "he")}

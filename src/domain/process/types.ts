@@ -201,6 +201,7 @@ export type FieldType =
   | "boolean"
   | "select"
   | "signature"
+  | "name_and_signature"
   | "textarea"
   | "temperature"
   | "pressure"

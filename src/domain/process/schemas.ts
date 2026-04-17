@@ -31,6 +31,7 @@ export const fieldTypeSchema = z.enum([
   "boolean",
   "select",
   "signature",
+  "name_and_signature",
   "textarea",
   "temperature",
   "pressure",

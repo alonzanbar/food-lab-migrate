@@ -1,6 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { translateSelectOptionLabel } from "@/i18n/processSelectOptions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  NameSignatureField,
+  type NameSignatureFieldHandle,
+} from "@/components/process/NameSignatureField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +40,26 @@ type Schema =
 
 export type StepFormSubmitMeta = {
   imageFiles?: Record<string, File>;
+  /**
+   * Signature image files for `name_and_signature` fields.
+   * Single-form: key is the field key. Matrix: key is `rowIndex::fieldKey` (e.g. `0::worker_name_sig`).
+   */
+  nameSignatureFiles?: Record<string, File>;
 };
+
+function matrixNameSigCompositeKey(rowIndex: number, colKey: string) {
+  return `${rowIndex}::${colKey}`;
+}
+
+function parseMatrixNameSigCell(raw: string): unknown {
+  const s = raw?.trim() ?? "";
+  if (!s) return undefined;
+  try {
+    return JSON.parse(s);
+  } catch {
+    return raw;
+  }
+}
 
 function labelFor(f: FieldDef, lang: string) {
   return lang === "he" ? f.label_he : f.label_en;
@@ -55,6 +78,12 @@ function emptyRow(
   const r: Record<string, string> = {};
   for (const c of cols) {
     if (c.validation?.auto_row_index) r[c.key] = String(rowNumber1Based);
+    else if (c.field_type === "name_and_signature") {
+      if (processFieldDefaults && Object.prototype.hasOwnProperty.call(processFieldDefaults, c.key)) {
+        const dv = processFieldDefaults[c.key];
+        r[c.key] = typeof dv === "object" && dv !== null ? JSON.stringify(dv) : stringifyFieldValue(dv);
+      } else r[c.key] = "";
+    }
     else if (processFieldDefaults && Object.prototype.hasOwnProperty.call(processFieldDefaults, c.key)) {
       r[c.key] = stringifyFieldValue(processFieldDefaults[c.key]);
     } else r[c.key] = stringifyFieldValue(c.default_value);
@@ -133,7 +162,10 @@ export function DynamicStepForm(props: {
   noticeBanner?: string | null;
   disabled?: boolean;
   onBack?: () => void;
-  onSaveAndAddRow?: (payload: Record<string, unknown>) => void | Promise<void>;
+  onSaveAndAddRow?: (
+    payload: Record<string, unknown>,
+    meta?: StepFormSubmitMeta,
+  ) => void | Promise<void>;
 }) {
   const { lang, t } = useLanguage();
   const { schema, parameterization, processFieldDefaults } = props;
@@ -146,11 +178,14 @@ export function DynamicStepForm(props: {
     return lang === "he" ? he || en : en || he;
   }, [parameterization, lang]);
 
+  const nameSigRefs = useRef<Record<string, NameSignatureFieldHandle | null>>({});
+
   const [single, setSingle] = useState<Record<string, string>>(() => {
     const init = props.initialData || {};
     const out: Record<string, string> = {};
     const fillFields = (fields: FieldDef[] | undefined) => {
       for (const f of fields || []) {
+        if (f.field_type === "name_and_signature") continue;
         const v = init[f.key];
         out[f.key] =
           v === undefined || v === null ? stringifyFieldValue(f.default_value) : stringifyFieldValue(v);
@@ -174,6 +209,14 @@ export function DynamicStepForm(props: {
         const row: Record<string, string> = {};
         for (const c of cols) {
           const v = r[c.key];
+          if (c.field_type === "name_and_signature") {
+            if (v !== undefined && v !== null) {
+              row[c.key] = typeof v === "object" ? JSON.stringify(v) : stringifyFieldValue(v);
+            } else {
+              row[c.key] = "";
+            }
+            continue;
+          }
           let cell =
             v === undefined || v === null
               ? stringifyFieldValue(c.default_value)
@@ -209,34 +252,52 @@ export function DynamicStepForm(props: {
     e.target.value = "";
   }
 
-  function validateMatrixRowRequired(row: Record<string, string>) {
-    if (schema.input_mode !== "matrix") return true;
-    for (const c of schema.columns) {
-      if (c.validation?.auto_row_index || !c.required) continue;
-      const raw = row[c.key]?.trim() ?? "";
-      if (!raw) {
-        alert(t("common.required"));
-        return false;
-      }
-    }
-    return true;
-  }
+  async function buildMatrixRowsWithSignatures(): Promise<
+    { rows: Record<string, unknown>[]; nameSignatureFiles: Record<string, File> } | null
+  > {
+    if (schema.input_mode !== "matrix") return null;
+    const cols = schema.columns;
+    const out: Record<string, unknown>[] = [];
+    const nameSignatureFiles: Record<string, File> = {};
 
-  function buildCleanedMatrixRows(sourceRows: Record<string, string>[]) {
-    if (schema.input_mode !== "matrix") return [];
-    return sourceRows.map((r, ri) => {
-      const o: Record<string, unknown> = {};
-      for (const c of schema.columns) {
+    for (let ri = 0; ri < rows.length; ri++) {
+      const rowOut: Record<string, unknown> = {};
+      for (const c of cols) {
         if (c.validation?.auto_row_index) {
-          const raw = r[c.key]?.trim() || String(ri + 1);
-          o[c.key] = parseInt(raw, 10);
+          const raw = rows[ri][c.key]?.trim() || String(ri + 1);
+          rowOut[c.key] = parseInt(raw, 10);
           continue;
         }
-        const raw = r[c.key]?.trim() ?? "";
-        o[c.key] = coerceValue(c.field_type, raw);
+        if (c.field_type === "name_and_signature") {
+          const ck = matrixNameSigCompositeKey(ri, c.key);
+          const h = nameSigRefs.current[ck];
+          if (!h) {
+            alert(t("common.error"));
+            return null;
+          }
+          const p = await h.prepareSubmit();
+          if (c.required && !p) return null;
+          if (!p) {
+            rowOut[c.key] = { name: "", signatureUrl: null };
+          } else {
+            rowOut[c.key] = {
+              name: p.name,
+              signatureUrl: p.existingSignatureUrl,
+            };
+            if (p.signatureFile) nameSignatureFiles[ck] = p.signatureFile;
+          }
+          continue;
+        }
+        const raw = rows[ri][c.key]?.trim() ?? "";
+        if (c.required && !raw) {
+          alert(t("common.required"));
+          return null;
+        }
+        rowOut[c.key] = coerceValue(c.field_type, raw);
       }
-      return o;
-    });
+      out.push(rowOut);
+    }
+    return { rows: out, nameSignatureFiles };
   }
 
   function setMatrixCellValue(rowIndex: number, key: string, value: string) {
@@ -258,13 +319,17 @@ export function DynamicStepForm(props: {
 
   async function handleMatrixSaveAndAddRow() {
     if (schema.input_mode !== "matrix" || !props.onSaveAndAddRow) return;
-    const currentRow = rows[activeRowIndex];
-    if (!currentRow) return;
-    if (!validateMatrixRowRequired(currentRow)) return;
 
     setSubmitting(true);
     try {
-      await props.onSaveAndAddRow({ rows: buildCleanedMatrixRows(rows) });
+      const built = await buildMatrixRowsWithSignatures();
+      if (!built) return;
+      const meta: StepFormSubmitMeta = {};
+      if (Object.keys(built.nameSignatureFiles).length > 0) meta.nameSignatureFiles = built.nameSignatureFiles;
+      await props.onSaveAndAddRow(
+        { rows: built.rows },
+        Object.keys(meta).length > 0 ? meta : undefined,
+      );
       appendEmptyMatrixRow();
     } finally {
       setSubmitting(false);
@@ -276,18 +341,41 @@ export function DynamicStepForm(props: {
     setSubmitting(true);
     try {
       if (schema.input_mode === "matrix") {
-        for (const row of rows) {
-          if (!validateMatrixRowRequired(row)) {
-            setSubmitting(false);
-            return;
-          }
+        const built = await buildMatrixRowsWithSignatures();
+        if (!built) {
+          setSubmitting(false);
+          return;
         }
-        const cleaned = buildCleanedMatrixRows(rows);
-        await props.onSubmit({ rows: cleaned });
+        const meta: StepFormSubmitMeta = {};
+        if (Object.keys(built.nameSignatureFiles).length > 0) meta.nameSignatureFiles = built.nameSignatureFiles;
+        await props.onSubmit(
+          { rows: built.rows },
+          Object.keys(meta).length > 0 ? meta : undefined,
+        );
       } else {
         const imageFiles: Record<string, File> = {};
+        const nameSignatureFiles: Record<string, File> = {};
         const out: Record<string, unknown> = {};
         for (const f of fields) {
+          if (f.field_type === "name_and_signature") {
+            const handle = nameSigRefs.current[f.key];
+            if (!handle) {
+              alert(t("common.error"));
+              setSubmitting(false);
+              return;
+            }
+            const payload = await handle.prepareSubmit();
+            if (!payload) {
+              setSubmitting(false);
+              return;
+            }
+            out[f.key] = {
+              name: payload.name,
+              signatureUrl: payload.existingSignatureUrl,
+            };
+            if (payload.signatureFile) nameSignatureFiles[f.key] = payload.signatureFile;
+            continue;
+          }
           if (f.field_type === "image") {
             const pending = pendingImages[f.key];
             if (f.required && !pending && !single[f.key]?.trim()) {
@@ -307,8 +395,10 @@ export function DynamicStepForm(props: {
           }
           out[f.key] = coerceValue(f.field_type, raw);
         }
-        const meta = Object.keys(imageFiles).length > 0 ? { imageFiles } : undefined;
-        await props.onSubmit(out, meta);
+        const meta: StepFormSubmitMeta = {};
+        if (Object.keys(imageFiles).length > 0) meta.imageFiles = imageFiles;
+        if (Object.keys(nameSignatureFiles).length > 0) meta.nameSignatureFiles = nameSignatureFiles;
+        await props.onSubmit(out, Object.keys(meta).length > 0 ? meta : undefined);
       }
     } finally {
       setSubmitting(false);
@@ -346,6 +436,27 @@ export function DynamicStepForm(props: {
       );
     }
 
+    if (c.field_type === "name_and_signature") {
+      const ck = matrixNameSigCompositeKey(rowIndex, c.key);
+      return (
+        <div className="min-w-[12rem] max-w-[min(100vw-2rem,28rem)] py-1">
+          <NameSignatureField
+            key={ck}
+            ref={(instance) => {
+              nameSigRefs.current[ck] = instance;
+            }}
+            fieldKey={ck}
+            label={labelFor(c, lang)}
+            required={c.required}
+            disabled={!!props.disabled}
+            initialValue={parseMatrixNameSigCell(value)}
+            translate={t}
+            lang={lang}
+          />
+        </div>
+      );
+    }
+
     if (c.field_type === "select" && c.options?.length) {
       return (
         <SelectFromOptions
@@ -374,6 +485,24 @@ export function DynamicStepForm(props: {
     const lab = labelFor(f, lang);
     const pending = pendingImages[f.key];
     const existingUrl = value.startsWith("http") ? value : null;
+
+    if (f.field_type === "name_and_signature") {
+      return (
+        <NameSignatureField
+          key={f.key}
+          ref={(instance) => {
+            nameSigRefs.current[f.key] = instance;
+          }}
+          fieldKey={f.key}
+          label={lab}
+          required={f.required}
+          disabled={!!props.disabled}
+          initialValue={props.initialData?.[f.key]}
+          translate={t}
+          lang={lang}
+        />
+      );
+    }
 
     if (f.field_type === "image") {
       return (

@@ -71,6 +71,10 @@ export default function ProcessStepFill() {
         : `/worker/processes/${processDefinitionId}/runs/${runId}`,
     [processDefinitionId, runId, phaseId],
   );
+  const runPhasesPath = useMemo(
+    () => `/worker/processes/${processDefinitionId}/runs/${runId}`,
+    [processDefinitionId, runId],
+  );
 
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<Record<string, unknown> | null>(null);
@@ -87,6 +91,45 @@ export default function ProcessStepFill() {
       (x): x is FieldDefLike =>
         !!x && typeof x === "object" && typeof (x as FieldDefLike).key === "string",
     );
+  }
+
+  async function applyNameSignatureUploads(
+    finalPayload: Record<string, unknown>,
+    meta: StepFormSubmitMeta | undefined,
+  ): Promise<boolean> {
+    if (!meta?.nameSignatureFiles || !stepRunId || !tenantId) return true;
+    for (const [key, file] of Object.entries(meta.nameSignatureFiles)) {
+      const ext = file.name.split(".").pop() || "png";
+      const safeKey = key.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const path = `${tenantId}/process-steps/${stepRunId}/${safeKey}_sig_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("submission-images").upload(path, file);
+      if (upErr) {
+        console.error(upErr);
+        toast.error(t("common.error"));
+        return false;
+      }
+      const { data: urlData } = supabase.storage.from("submission-images").getPublicUrl(path);
+      if (key.includes("::")) {
+        const parts = key.split("::");
+        if (parts.length !== 2) continue;
+        const ri = parseInt(parts[0], 10);
+        if (Number.isNaN(ri)) continue;
+        const fieldKey = parts[1];
+        const rows = finalPayload.rows;
+        if (!Array.isArray(rows) || ri < 0 || ri >= rows.length) continue;
+        const row = rows[ri] as Record<string, unknown>;
+        const block = row[fieldKey];
+        if (block && typeof block === "object" && !Array.isArray(block)) {
+          (block as Record<string, unknown>).signatureUrl = urlData.publicUrl;
+        }
+      } else {
+        const block = finalPayload[key];
+        if (block && typeof block === "object" && !Array.isArray(block)) {
+          (block as Record<string, unknown>).signatureUrl = urlData.publicUrl;
+        }
+      }
+    }
+    return true;
   }
 
   useEffect(() => {
@@ -207,6 +250,8 @@ export default function ProcessStepFill() {
       }
     }
 
+    if (!(await applyNameSignatureUploads(finalPayload, meta))) return;
+
     const { error } = await (supabase as unknown as ProcessStepRunsUpdateClient)
       .from("process_step_runs")
       .update({
@@ -238,12 +283,18 @@ export default function ProcessStepFill() {
     navigate(stepsListPath);
   }
 
-  async function handleMatrixSaveAndAddRow(payload: Record<string, unknown>) {
+  async function handleMatrixSaveAndAddRow(
+    payload: Record<string, unknown>,
+    meta?: StepFormSubmitMeta,
+  ) {
     if (!stepRunId || !tenantId) return;
+    const finalPayload = { ...payload };
+    if (!(await applyNameSignatureUploads(finalPayload, meta))) return;
+
     const { error } = await (supabase as unknown as ProcessStepRunsUpdateClient)
       .from("process_step_runs")
       .update({
-        captured_data: payload,
+        captured_data: finalPayload,
         status: "in_progress",
         completed_at: null,
       })
@@ -268,15 +319,22 @@ export default function ProcessStepFill() {
       : { input_mode: "single_form" as const, fields: (raw.fields || []) as never[] };
 
   const processFieldDefaults = pickFieldDefaults(parameterization);
+  const navigateFromHierarchy = (to: string) => {
+    if (to === runPhasesPath) {
+      navigate(to, { state: { skipResume: true } });
+      return;
+    }
+    navigate(to);
+  };
 
   return (
     <div className="space-y-4 py-4">
       <HierarchyNavBar
         backTo={mode === "matrix" ? undefined : stepsListPath}
         backLabel={t("common.back")}
-        onNavigate={navigate}
+        onNavigate={navigateFromHierarchy}
         items={[
-          { label: t("process.runPhases"), to: `/worker/processes/${processDefinitionId}/runs/${runId}` },
+          { label: t("process.runPhases"), to: runPhasesPath },
           { label: phaseTitle || t("process.runSteps"), to: stepsListPath },
           { label: title, current: true },
         ]}

@@ -61,6 +61,8 @@ export const translations = {
   "admin.processStatusPublished": { he: "מפורסם", en: "Published" },
   "admin.processStatusDraft": { he: "טיוטה", en: "Draft" },
   "admin.processStatusArchived": { he: "בארכיון", en: "Archived" },
+  "admin.tenantNameLabel": { he: "שם ארגון", en: "Tenant name" },
+  "admin.tenantIdLabel": { he: "מזהה ארגון", en: "Tenant ID" },
   "admin.processOutlineReadOnlyHint": {
     he: "תצוגת מבנה בלבד — שלבים לפי סדר ביצוע. אין אפשרות להתחיל ריצה או למלא טפסים מכאן.",
     en: "Structure only — steps in execution order. Runs and data entry are not available here.",
@@ -175,6 +177,34 @@ export const translations = {
   "process.finishStep": { he: "סיים שלב", en: "Finish Step" },
   "process.approved": { he: "מאושר", en: "Approved" },
   "process.notApproved": { he: "לא מאושר", en: "Not approved" },
+  "process.signature.signHere": { he: "חתום כאן", en: "Sign here" },
+  "process.signature.signHereAria": {
+    he: "אזור חתימה — ניתן לצייר באצבע או בעט",
+    en: "Signature area — draw with finger or stylus",
+  },
+  "process.signature.tabSign": { he: "חתימה", en: "Sign" },
+  "process.signature.tabUpload": { he: "העלאה", en: "Upload" },
+  "process.signature.uploadPhoto": {
+    he: "העלאת תמונת חתימה (מצלמה או גלריה)",
+    en: "Upload a photo of your signature (camera or gallery)",
+  },
+  "process.signature.clear": { he: "נקה", en: "Clear" },
+  "process.signature.undo": { he: "בטל קו", en: "Undo" },
+  "process.signature.replace": { he: "החלף חתימה", en: "Replace signature" },
+  "process.signature.required": { he: "נדרשת חתימה", en: "Signature is required" },
+  "process.name.required": { he: "נדרש שם", en: "Name is required" },
+  "process.signature.blockHint": {
+    he: "ניתן לחתום במסך או להעלות תמונת חתימה.",
+    en: "You can sign on screen or upload a photo of your signature.",
+  },
+  "process.signature.invalidImageType": {
+    he: "יש לבחור קובץ תמונה",
+    en: "Please choose an image file",
+  },
+  "process.signature.fileTooLarge": {
+    he: "הקובץ גדול מדי (מקסימום 5 מ״ב)",
+    en: "File is too large (max 5 MB)",
+  },
 
   // Reports
   "reports.title": { he: "דוחות", en: "Reports" },

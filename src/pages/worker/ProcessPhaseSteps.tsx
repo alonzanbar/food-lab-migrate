@@ -17,6 +17,17 @@ export default function ProcessPhaseSteps() {
   const navigate = useNavigate();
 
   const { groups, loading } = useProcessRunStepRuns(runId, tenantId);
+  const runPhasesPath = useMemo(
+    () => `/worker/processes/${processDefinitionId}/runs/${runId}`,
+    [processDefinitionId, runId],
+  );
+  const navigateFromHierarchy = (to: string) => {
+    if (to === runPhasesPath) {
+      navigate(to, { state: { skipResume: true } });
+      return;
+    }
+    navigate(to);
+  };
 
   const group = useMemo(() => groups.find((g) => g.phaseId === phaseId), [groups, phaseId]);
 
@@ -28,11 +39,11 @@ export default function ProcessPhaseSteps() {
     return (
       <div className="space-y-4 py-4">
         <HierarchyNavBar
-          backTo={`/worker/processes/${processDefinitionId}/runs/${runId}`}
+          backTo={runPhasesPath}
           backLabel={t("common.back")}
-          onNavigate={navigate}
+          onNavigate={navigateFromHierarchy}
           items={[
-            { label: t("process.runPhases"), to: `/worker/processes/${processDefinitionId}/runs/${runId}` },
+            { label: t("process.runPhases"), to: runPhasesPath },
             { label: t("common.noData"), current: true },
           ]}
         />
@@ -73,11 +84,11 @@ export default function ProcessPhaseSteps() {
   return (
     <div className="space-y-4 py-4">
       <HierarchyNavBar
-        backTo={`/worker/processes/${processDefinitionId}/runs/${runId}`}
+        backTo={runPhasesPath}
         backLabel={t("common.back")}
-        onNavigate={navigate}
+        onNavigate={navigateFromHierarchy}
         items={[
-          { label: t("process.runPhases"), to: `/worker/processes/${processDefinitionId}/runs/${runId}` },
+          { label: t("process.runPhases"), to: runPhasesPath },
           { label: phaseTitle, current: true },
         ]}
       />

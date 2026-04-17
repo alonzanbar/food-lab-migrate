@@ -23,8 +23,14 @@ execSync("npm run generate:step-definitions-migration", {
   cwd: process.cwd(),
 });
 
-const dirty = execSync("git status --porcelain", { encoding: "utf8" }).trim();
-if (dirty) {
+const artifactPaths = "supabase/migrations/ supabase/migrations/meta/step_definitions_catalog.sha256";
+const unstagedArtifacts = execSync(`git diff --name-only -- ${artifactPaths}`, {
+  encoding: "utf8",
+}).trim();
+const untrackedArtifacts = execSync(`git ls-files --others --exclude-standard -- ${artifactPaths}`, {
+  encoding: "utf8",
+}).trim();
+if (unstagedArtifacts || untrackedArtifacts) {
   console.error(`
 Step seed catalogs changed but migration artifacts are not fully committed.
 

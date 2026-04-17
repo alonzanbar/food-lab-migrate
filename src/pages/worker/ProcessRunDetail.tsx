@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProcessRunStepRuns, phaseIdForStepRunRow } from "@/hooks/use-process-run-step-runs";
@@ -30,6 +30,7 @@ export default function ProcessRunDetail() {
   }>();
   const { tenantId } = useAuth();
   const { t, lang } = useLanguage();
+  const location = useLocation();
   const navigate = useNavigate();
   const resumeDone = useRef(false);
 
@@ -63,6 +64,8 @@ export default function ProcessRunDetail() {
 
   useEffect(() => {
     if (loading || !tenantId || !runId || !processDefinitionId || groups.length === 0) return;
+    const navState = (location.state || {}) as { skipResume?: boolean };
+    if (navState.skipResume) return;
     if (resumeDone.current) return;
     const last = readLastOpenedStep(tenantId, runId);
     if (!last || last.processDefinitionId !== processDefinitionId) return;
@@ -83,7 +86,7 @@ export default function ProcessRunDetail() {
       `/worker/processes/${processDefinitionId}/runs/${runId}/phases/${encodeURIComponent(phaseId)}/fill/${last.stepRunId}`,
       { replace: true },
     );
-  }, [loading, tenantId, runId, processDefinitionId, groups, navigate]);
+  }, [loading, tenantId, runId, processDefinitionId, groups, navigate, location.state]);
 
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">{t("common.loading")}</div>;

@@ -8,6 +8,7 @@ interface AuthContextType {
   role: "admin" | "worker" | "superuser" | null;
   isSuperuser: boolean;
   tenantId: string | null;
+  tenantName: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<"admin" | "worker" | "superuser" | null>(null);
   const [isSuperuser, setIsSuperuser] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUserMeta = async (userId: string) => {
@@ -52,8 +54,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("tenant_id")
       .eq("id", userId)
       .single();
-    
-    setTenantId(profile?.tenant_id || null);
+
+    const resolvedTenantId = profile?.tenant_id || null;
+    setTenantId(resolvedTenantId);
+
+    if (!resolvedTenantId) {
+      setTenantName(null);
+      return;
+    }
+
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("name")
+      .eq("id", resolvedTenantId)
+      .maybeSingle();
+    setTenantName((tenant as { name?: string } | null)?.name || null);
   };
 
   useEffect(() => {
@@ -79,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setRole(null);
           setIsSuperuser(false);
           setTenantId(null);
+          setTenantName(null);
         }
       }
     );
@@ -115,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(null);
     setIsSuperuser(false);
     setTenantId(null);
+    setTenantName(null);
   };
 
   const refresh = async () => {
@@ -127,11 +144,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRole(null);
       setIsSuperuser(false);
       setTenantId(null);
+      setTenantName(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, isSuperuser, tenantId, loading, signIn, signUp, signInWithMagicLink, signOut, refresh }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        role,
+        isSuperuser,
+        tenantId,
+        tenantName,
+        loading,
+        signIn,
+        signUp,
+        signInWithMagicLink,
+        signOut,
+        refresh,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
